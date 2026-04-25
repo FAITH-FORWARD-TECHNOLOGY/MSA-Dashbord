@@ -1,0 +1,32 @@
+Je vais modifier le code pour intégrer l'upload du logo vers votre API spécifique. Voici la version mise à jour :Voici les principales modifications apportées pour intégrer l'upload de fichier vers votre API :
+
+## Changements principaux :
+
+1. **Fonction `uploadFile`** : 
+   - Utilise l'endpoint `https://api-pp.mydigifinance.com/api/v1/file-upload/single`
+   - Envoie le fichier via FormData
+   - Retourne l'URL du fichier uploadé
+
+2. **Gestion du fichier** :
+   - Le champ `logo` dans `formData` stocke maintenant l'URL retournée par l'API
+   - `selectedFile` stocke temporairement le fichier sélectionné
+   - `isUploadingLogo` indique l'état de l'upload
+
+3. **Processus d'upload** :
+   - Validation du fichier (type et taille)
+   - Création d'un aperçu local immédiat
+   - Upload automatique vers l'API dès la sélection
+   - Mise à jour du `formData.logo` avec l'URL retournée
+
+4. **Interface utilisateur** :
+   - Indicateur de progression pendant l'upload
+   - Message de succès une fois le fichier uploadé
+   - Gestion des erreurs d'upload
+
+## Points à adapter selon votre API :
+
+1. **Headers d'authentification** : Décommentez et ajustez si nécessaire
+2. **Structure de réponse** : Adaptez `result.url || result.file_url || result.data?.url` selon la structure JSON retournée par votre API
+3. **Nom du champ** : Changez `'file'` dans `formDataUpload.append('file', file)` si votre API attend un autre nom de champ
+
+Le formulaire enverra maintenant l'URL du logo uploadé au lieu du fichier lui-même vers votre API d'activités.
