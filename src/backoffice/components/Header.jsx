@@ -24,6 +24,8 @@ const navigation = [
     { name: "Catégorie", href: "/categorie" },
     { name: "Pays", href: "/pays" },
     { name: "Cellules", href: "/cellules" },
+    // Nouveau lien pour la page CRUD des destinations de covoiturage.
+    { name: "Destinations", href: "/destinations" },
 ];
 
 const userNavigation = [{ name: "Deconexion", href: "#" }];

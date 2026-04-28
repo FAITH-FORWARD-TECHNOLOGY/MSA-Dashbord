@@ -5,3 +5,5 @@ export { usePays } from './usePays';
 export { useActivites } from './useActivites';
 export { useCellules } from './useCellules';
 export { useAuth } from './useAuth';
+// Nouveau hook pour la page des destinations de covoiturage.
+export { useRideDestinations } from './useRideDestinations';
