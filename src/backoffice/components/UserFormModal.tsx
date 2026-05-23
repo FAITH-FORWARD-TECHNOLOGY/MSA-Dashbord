@@ -119,6 +119,10 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             dataToSend.celluleId = formData.celluleId;
         }
 
+        // Tout compte créé depuis le dashboard admin est activé directement —
+        // pas de flow de confirmation email à passer comme pour le signup public.
+        dataToSend.isActive = true;
+
         console.log("Données envoyées:", dataToSend); // Pour debug
 
         setIsLoading(true);

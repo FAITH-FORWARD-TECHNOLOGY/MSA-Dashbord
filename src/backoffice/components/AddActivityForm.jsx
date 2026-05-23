@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config/api";
 import {
     X,
     Upload,
@@ -18,7 +19,16 @@ import {
     Image,
 } from "lucide-react";
 
+// `userId` est optionnel : si on ouvre le modal depuis le profil utilisateur,
+// l'id est connu d'avance et fixé. Si on ouvre depuis la page Activités, on
+// affiche un picker d'utilisateur en haut du formulaire.
 export default function AddActivityModal({ userId, onClose, onSuccess }) {
+    // State du picker utilisateur (uniquement actif si userId n'est pas fourni)
+    const [selectedUserId, setSelectedUserId] = useState(userId || null);
+    const [userSearch, setUserSearch] = useState("");
+    const [allUsers, setAllUsers] = useState([]);
+    const [showUserDropdown, setShowUserDropdown] = useState(false);
+
     const [formData, setFormData] = useState({
         fonction: "",
         region: "",
@@ -50,16 +60,22 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [paysRes, categorieRes] = await Promise.all([
-                    fetch("https://api-msa.mydigifinance.com/pays").then((r) =>
-                        r.json()
-                    ),
-                    fetch("https://api-msa.mydigifinance.com/categorie").then(
-                        (r) => r.json()
-                    ),
-                ]);
-                setPaysOptions(paysRes);
-                setCategorieOptions(categorieRes);
+                // Si pas de userId fourni, on charge aussi la liste users pour le picker
+                const calls = [
+                    fetch(`${API_BASE_URL}/pays`).then((r) => r.json()),
+                    fetch(`${API_BASE_URL}/categorie`).then((r) => r.json()),
+                ];
+                if (!userId) {
+                    calls.push(
+                        fetch(`${API_BASE_URL}/users`).then((r) => r.json()),
+                    );
+                }
+                const results = await Promise.all(calls);
+                setPaysOptions(results[0]);
+                setCategorieOptions(results[1]);
+                if (!userId && results[2]) {
+                    setAllUsers(Array.isArray(results[2]) ? results[2] : []);
+                }
             } catch (error) {
                 console.error("Erreur lors du chargement des données:", error);
             } finally {
@@ -68,10 +84,33 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
         };
 
         fetchData();
-    }, []);
+    }, [userId]);
+
+    // Liste filtrée pour l'autocomplete (max 8 résultats).
+    const filteredUsers = !userId && userSearch
+        ? allUsers
+            .filter((u) => {
+                const q = userSearch.toLowerCase();
+                return (
+                    (u.nom || "").toLowerCase().includes(q) ||
+                    (u.prenom || "").toLowerCase().includes(q) ||
+                    (u.email || "").toLowerCase().includes(q)
+                );
+            })
+            .slice(0, 8)
+        : [];
+
+    const selectedUser = !userId
+        ? allUsers.find((u) => u.id === selectedUserId)
+        : null;
 
     const validate = () => {
         const newErrors = {};
+        // Si on n'a pas de userId fixé en prop, l'admin doit avoir sélectionné
+        // un utilisateur dans le picker.
+        if (!userId && !selectedUserId) {
+            newErrors.user = "Sélectionnez un utilisateur.";
+        }
         const requiredFields = [
             "fonction",
             "region",
@@ -243,10 +282,12 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
                 : null,
         };
 
+        const effectiveUserId = userId ?? selectedUserId;
+
         setIsLoading(true);
         try {
             const response = await fetch(
-                `https://api-msa.mydigifinance.com/users/${userId}/activities`,
+                `${API_BASE_URL}/users/${effectiveUserId}/activities`,
                 {
                     method: "POST",
                     headers: {
@@ -432,6 +473,84 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                             <p className="text-red-700">{errors.submit}</p>
+                        </div>
+                    )}
+
+                    {/* Picker utilisateur — uniquement quand userId n'est pas
+                        fixé via prop (i.e. ouverture depuis la page Activités). */}
+                    {!userId && (
+                        <div className="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                                <Users size={16} className="mr-2 text-indigo-600" />
+                                Rattacher l'activité à un utilisateur *
+                            </label>
+                            {selectedUser ? (
+                                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-md border border-indigo-200">
+                                    <span className="text-sm text-gray-900">
+                                        <strong>
+                                            {selectedUser.prenom} {selectedUser.nom}
+                                        </strong>
+                                        <span className="text-gray-500 ml-2">
+                                            {selectedUser.email}
+                                        </span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedUserId(null);
+                                            setUserSearch("");
+                                        }}
+                                        className="text-xs text-indigo-600 hover:text-indigo-800"
+                                    >
+                                        Changer
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={userSearch}
+                                        onChange={(e) => {
+                                            setUserSearch(e.target.value);
+                                            setShowUserDropdown(true);
+                                            if (errors.user) {
+                                                setErrors((prev) => ({
+                                                    ...prev,
+                                                    user: "",
+                                                }));
+                                            }
+                                        }}
+                                        onFocus={() => setShowUserDropdown(true)}
+                                        placeholder="Tapez un nom, prénom ou email…"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    />
+                                    {showUserDropdown && filteredUsers.length > 0 && (
+                                        <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                                            {filteredUsers.map((u) => (
+                                                <li
+                                                    key={u.id}
+                                                    className="px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                                                    onClick={() => {
+                                                        setSelectedUserId(u.id);
+                                                        setUserSearch("");
+                                                        setShowUserDropdown(false);
+                                                    }}
+                                                >
+                                                    <div className="font-medium text-gray-900">
+                                                        {u.prenom} {u.nom}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {u.email}
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+                            {errors.user && (
+                                <p className="text-xs text-red-600 mt-1">{errors.user}</p>
+                            )}
                         </div>
                     )}
 

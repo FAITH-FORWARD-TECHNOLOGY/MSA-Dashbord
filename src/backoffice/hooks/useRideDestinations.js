@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-
-// URL de l'API NestJS. Par défaut on tape la prod.
-// Pour tester en local : npm run dev:local (qui set VITE_API_URL=http://localhost:3000)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api-msa.mydigifinance.com';
+import { API_BASE_URL } from '../config/api';
 
 // Hook CRUD pour les destinations de covoiturage.
 // Expose la liste, les méthodes create/update/delete + le toggle actif.

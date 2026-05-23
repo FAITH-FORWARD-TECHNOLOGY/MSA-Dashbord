@@ -5,9 +5,15 @@ import {
     ChevronRight,
     Briefcase,
     Download,
+    Edit2,
+    Trash2,
+    Power,
+    PowerOff,
 } from "lucide-react";
 
-function ActiviteList({ activities }) {
+// Reçoit les callbacks `onEdit`, `onToggle`, `onDelete` depuis la page parent.
+// La liste reste "dumb" — elle se contente d'afficher et de remonter les clics.
+function ActiviteList({ activities, onEdit, onToggle, onDelete }) {
     // États pour la recherche et pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +65,7 @@ function ActiviteList({ activities }) {
                 Tarif: activity.tarif || "N/A",
                 Téléphone: activity.telephone || "N/A",
                 Catégorie: activity.categorie?.nom || "N/A",
+                Statut: (activity.isActive ?? true) ? "Actif" : "Désactivé",
                 Expertises:
                     activity.expertise?.map((exp) => exp.nom).join(", ") ||
                     "N/A",
@@ -185,6 +192,12 @@ function ActiviteList({ activities }) {
                                     <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
                                         Expertises
                                     </th>
+                                    <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                                        Statut
+                                    </th>
+                                    <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -239,6 +252,60 @@ function ActiviteList({ activities }) {
                                                     )
                                                 )}
                                             </ul>
+                                        </td>
+
+                                        {/* STATUT */}
+                                        <td className="px-4 py-2 text-sm">
+                                            <span
+                                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                    (activity.isActive ?? true)
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
+                                            >
+                                                {(activity.isActive ?? true)
+                                                    ? "Actif"
+                                                    : "Désactivé"}
+                                            </span>
+                                        </td>
+
+                                        {/* ACTIONS */}
+                                        <td className="px-4 py-2 text-sm">
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => onEdit?.(activity)}
+                                                    title="Modifier"
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => onToggle?.(activity)}
+                                                    title={
+                                                        (activity.isActive ?? true)
+                                                            ? "Désactiver"
+                                                            : "Activer"
+                                                    }
+                                                    className={`p-1.5 rounded ${
+                                                        (activity.isActive ?? true)
+                                                            ? "text-amber-600 hover:bg-amber-50"
+                                                            : "text-emerald-600 hover:bg-emerald-50"
+                                                    }`}
+                                                >
+                                                    {(activity.isActive ?? true) ? (
+                                                        <PowerOff className="w-4 h-4" />
+                                                    ) : (
+                                                        <Power className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => onDelete?.(activity)}
+                                                    title="Supprimer"
+                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

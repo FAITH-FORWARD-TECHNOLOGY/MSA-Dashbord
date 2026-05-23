@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = 'https://api-msa.mydigifinance.com';
+import { API_BASE_URL } from '../config/api';
 
 export function useCellules() {
     const [cellules, setCellules] = useState([]);

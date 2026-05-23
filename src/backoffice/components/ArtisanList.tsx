@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../config/api";
 
 // Liste des fonctions et expertises associées
 const fonctionsExpertises: Record<string, string[]> = {
@@ -88,7 +89,7 @@ const ArtisanList = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch("https://api-msa.mydigifinance.com/professionnels")
+        fetch(`${API_BASE_URL}/professionnels`)
             .then((res) => {
                 if (!res.ok) throw new Error("Erreur lors du chargement");
                 return res.json();
@@ -123,7 +124,7 @@ const ArtisanList = () => {
         if (window.confirm("Supprimer cet artisan ?")) {
             try {
                 const res = await fetch(
-                    `https://api-msa.mydigifinance.com/professionnels/${id}`,
+                    `${API_BASE_URL}/professionnels/${id}`,
                     { method: "DELETE" }
                 );
                 if (!res.ok) throw new Error("Erreur lors de la suppression");
@@ -200,7 +201,7 @@ const ArtisanList = () => {
             let res, updatedArtisan;
             if (editMode && form.id) {
                 res = await fetch(
-                    `https://api-msa.mydigifinance.com/professionnels/${form.id}`,
+                    `${API_BASE_URL}/professionnels/${form.id}`,
                     {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
@@ -216,7 +217,7 @@ const ArtisanList = () => {
                 );
             } else {
                 res = await fetch(
-                    "https://api-msa.mydigifinance.com/professionnels",
+                    `${API_BASE_URL}/professionnels`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

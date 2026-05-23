@@ -15,6 +15,9 @@ function CelluleFormModal({ onClose, onSuccess }) {
         startTime: "",
         contactPhone: "",
         isActive: true,
+        // Jours de réunion : ISO 8601 (1=lundi à 7=dimanche).
+        // Default = mercredi + dimanche, comme l'ancien comportement hardcodé.
+        meetingDays: [3, 7],
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -58,6 +61,11 @@ console.log(user);
             return;
         }
 
+        if (formData.meetingDays.length === 0) {
+            setError("Sélectionnez au moins un jour de réunion");
+            return;
+        }
+
         setIsLoading(true);
         setError("");
 
@@ -80,6 +88,18 @@ console.log(user);
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
+    };
+
+    // Toggle un jour de la semaine (1=lundi à 7=dimanche) dans meetingDays.
+    // Maintient le tableau trié pour un ordre d'affichage stable côté mobile.
+    const toggleMeetingDay = (day) => {
+        setFormData((prev) => {
+            const has = prev.meetingDays.includes(day);
+            const next = has
+                ? prev.meetingDays.filter((d) => d !== day)
+                : [...prev.meetingDays, day].sort((a, b) => a - b);
+            return { ...prev, meetingDays: next };
+        });
     };
 
     const clearUserSelection = () => {
@@ -292,6 +312,44 @@ console.log(user);
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="01 52 91 97 79"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Jours de réunion *
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { value: 1, label: "Lun" },
+                                    { value: 2, label: "Mar" },
+                                    { value: 3, label: "Mer" },
+                                    { value: 4, label: "Jeu" },
+                                    { value: 5, label: "Ven" },
+                                    { value: 6, label: "Sam" },
+                                    { value: 7, label: "Dim" },
+                                ].map((d) => {
+                                    const active = formData.meetingDays.includes(d.value);
+                                    return (
+                                        <button
+                                            key={d.value}
+                                            type="button"
+                                            onClick={() => toggleMeetingDay(d.value)}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                                                active
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {d.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {formData.meetingDays.length === 0 && (
+                                <p className="text-xs text-red-600 mt-1">
+                                    Sélectionne au moins un jour de réunion.
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex items-center">

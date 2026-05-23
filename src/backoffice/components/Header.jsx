@@ -26,6 +26,8 @@ const navigation = [
     { name: "Cellules", href: "/cellules" },
     // Nouveau lien pour la page CRUD des destinations de covoiturage.
     { name: "Destinations", href: "/destinations" },
+    // Configuration de version pour piloter le modal de MAJ mobile.
+    { name: "Version App", href: "/app-version" },
 ];
 
 const userNavigation = [{ name: "Deconexion", href: "#" }];

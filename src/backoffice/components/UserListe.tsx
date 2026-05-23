@@ -12,6 +12,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
+    Phone,
+    Users as UsersIcon,
 } from "lucide-react";
 import EditUserModal from "./EditUserModal";
 
@@ -39,16 +41,25 @@ const UserList: React.FC<UserListProps> = ({
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
 
-    // Filtrer les utilisateurs selon le terme de recherche
-    const filteredUsers = users.filter(
-        (user) =>
-            user?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user?.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (user?.pays?.nom || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-    );
+    // Filtrer les utilisateurs selon le terme de recherche.
+    // - Insensible à la casse.
+    // - Insensible aux espaces (utile pour matcher un numéro tapé avec ou
+    //   sans espaces : "01 02 03" doit trouver "01 02 03 04" ou "+22501020304").
+    const filteredUsers = users.filter((user: any) => {
+        if (!searchTerm.trim()) return true;
+        const q = searchTerm.toLowerCase();
+        const qDigits = searchTerm.replace(/\s+/g, "");
+        const phone = (user?.phoneNumber || "").replace(/\s+/g, "");
+        return (
+            (user?.nom || "").toLowerCase().includes(q) ||
+            (user?.prenom || "").toLowerCase().includes(q) ||
+            (user?.email || "").toLowerCase().includes(q) ||
+            (user?.pays?.nom || "").toLowerCase().includes(q) ||
+            (user?.cellule?.name || "").toLowerCase().includes(q) ||
+            (user?.cellule?.code || "").toLowerCase().includes(q) ||
+            phone.includes(qDigits)
+        );
+    });
 
     // Calculer la pagination
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -75,7 +86,8 @@ const UserList: React.FC<UserListProps> = ({
                 Rôle: user.role || "N/A",
                 Pays: user.pays?.nom || "N/A",
                 "Code Pays": user.pays?.code || "N/A",
-                "Cellule ID": user.celluleId || "N/A",
+                Cellule: (user as any).cellule?.name || "N/A",
+                "Code Cellule": (user as any).cellule?.code || "N/A",
                 "Date de création": user.createdAt
                     ? new Date(user.createdAt).toLocaleDateString("fr-FR")
                     : "N/A",
@@ -239,11 +251,28 @@ const UserList: React.FC<UserListProps> = ({
                                                                 : "👤 Utilisateur"}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center space-x-4 mt-1">
+                                                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1">
                                                         <p className="flex items-center text-sm text-gray-500">
                                                             <Mail className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                                             {user.email}
                                                         </p>
+                                                        {user.phoneNumber && (
+                                                            <p className="flex items-center text-sm text-gray-500">
+                                                                <Phone className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                                                {user.phoneNumber}
+                                                            </p>
+                                                        )}
+                                                        {(user as any).cellule?.name && (
+                                                            <p className="flex items-center text-sm text-gray-500">
+                                                                <UsersIcon className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                                                {(user as any).cellule.name}
+                                                                {(user as any).cellule.code && (
+                                                                    <span className="ml-1 text-xs text-gray-400 font-mono">
+                                                                        ({(user as any).cellule.code})
+                                                                    </span>
+                                                                )}
+                                                            </p>
+                                                        )}
                                                         {user.pays && (
                                                             <p className="flex items-center text-sm text-gray-500">
                                                                 <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />

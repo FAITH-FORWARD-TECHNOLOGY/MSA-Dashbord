@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE_URL } from "../config/api";
 import {
     X,
     Globe,
@@ -92,7 +93,7 @@ const PaysFormModal = ({ onClose, onSuccess }) => {
                 ...(form.flag.trim() && { flag: form.flag.trim() }),
             };
 
-            const res = await fetch("https://api-msa.mydigifinance.com/pays", {
+            const res = await fetch(`${API_BASE_URL}/pays`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

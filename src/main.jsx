@@ -13,6 +13,8 @@ import CellulePage from "./backoffice/pages/CellulePage.jsx";
 import LoginForm from "./backoffice/pages/LoginForm.jsx";
 // Nouvelle page pour gérer les destinations de covoiturage côté admin.
 import RideDestinationsPage from "./backoffice/pages/RideDestinationsPage.jsx";
+// Page de configuration de version pour piloter le modal de MAJ mobile.
+import AppVersionPage from "./backoffice/pages/AppVersionPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -51,6 +53,11 @@ const router = createBrowserRouter([
             {
                 path: "destinations",
                 element: <RideDestinationsPage />,
+            },
+            // Route "/app-version" → configuration du système de MAJ mobile.
+            {
+                path: "app-version",
+                element: <AppVersionPage />,
             },
             {
                 path: "login",

@@ -117,7 +117,10 @@ Routes principales définies dans `Header.jsx` :
 
 ### URL de l'API
 
-Base URL : `https://api-msa.mydigifinance.com/`
+Base URL centralisée dans [src/backoffice/config/api.js](../src/backoffice/config/api.js), définie par `VITE_API_URL` au build :
+- **PROD**  : `https://api-pr.mydigifinance.com` (dashboard `msa-pr.mydigifinance.com`)
+- **PP**    : `https://api-msa.mydigifinance.com` (environnement de test/preprod historique)
+- **LOCAL** : `http://localhost:3000` via `npm run dev:local`
 
 ## Points d'intégration critiques
 

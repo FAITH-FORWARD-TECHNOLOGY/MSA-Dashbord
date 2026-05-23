@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = 'https://api-msa.mydigifinance.com';
+import { API_BASE_URL } from '../config/api';
 
 export function useUsers() {
     const [users, setUsers] = useState([]);
@@ -73,17 +72,35 @@ export function useUsers() {
 
     const createUser = async (data) => {
         try {
+            // /auth/signup est désormais réservé aux admins (JwtAuthGuard
+            // + check role côté backend) — on ajoute le Bearer token de
+            // l'admin connecté, stocké dans localStorage.jobhubs_auth.user.token.
+            let token = '';
+            try {
+                const stored = localStorage.getItem('jobhubs_auth');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    token = parsed?.user?.token ?? '';
+                }
+            } catch {
+                token = '';
+            }
+
             const response = await fetch(`${API_BASE_URL}/auth/signup`, {
                 method: 'POST',
                 headers: {
                     accept: '*/*',
                     'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify(data),
             });
 
             if (!response.ok) {
-                throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                const body = await response.json().catch(() => ({}));
+                throw new Error(
+                    body.message || `Erreur ${response.status}: ${response.statusText}`
+                );
             }
 
             // Recharger les données après la création

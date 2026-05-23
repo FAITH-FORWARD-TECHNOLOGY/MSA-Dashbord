@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ImageUploader from "./ImageUpload";
+import { API_BASE_URL } from "../config/api";
 
 // Modal pour afficher les détails de l'activité
 export default function ActivityDetailModal({ activity, onClose, onUpdate }) {
@@ -21,7 +22,7 @@ export default function ActivityDetailModal({ activity, onClose, onUpdate }) {
 
         try {
             const response = await fetch(
-                `https://api-msa.mydigifinance.com/users/${activity.userId}/activities/${activity.id}/photos`,
+                `${API_BASE_URL}/users/${activity.userId}/activities/${activity.id}/photos`,
                 {
                     method: "POST",
                     headers: {
@@ -64,7 +65,7 @@ export default function ActivityDetailModal({ activity, onClose, onUpdate }) {
         setAddingExpertise(true);
         try {
             const response = await fetch(
-                `https://api-msa.mydigifinance.com/users/${activity.userId}/activities/expertise`,
+                `${API_BASE_URL}/users/${activity.userId}/activities/expertise`,
                 {
                     method: "POST",
                     headers: {

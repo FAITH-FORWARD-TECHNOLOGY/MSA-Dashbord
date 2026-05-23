@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Tag, Loader2, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { API_BASE_URL } from "../config/api";
 
 const CategorieFormModal = ({ onClose, onSuccess }) => {
     const [form, setForm] = useState({
@@ -47,7 +48,7 @@ const CategorieFormModal = ({ onClose, onSuccess }) => {
         setLoading(true);
         try {
             const res = await fetch(
-                "https://api-msa.mydigifinance.com/categorie",
+                `${API_BASE_URL}/categorie`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

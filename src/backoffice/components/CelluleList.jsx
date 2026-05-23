@@ -54,7 +54,10 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                 ?.toLowerCase()
                 .includes(globalSearchTerm.toLowerCase()) ||
             cellule.contactPhone?.includes(globalSearchTerm) ||
-            cellule.id?.toString().includes(globalSearchTerm)
+            cellule.id?.toString().includes(globalSearchTerm) ||
+            cellule.code
+                ?.toLowerCase()
+                .includes(globalSearchTerm.toLowerCase())
     );
 
     // Calculer la pagination
@@ -109,6 +112,12 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
             startTime: cellule.startTime || "",
             contactPhone: cellule.contactPhone || "",
             isActive: cellule.isActive,
+            // Fallback [3, 7] pour les cellules antérieures à la migration
+            // (au cas où le backend renverrait null par compat).
+            meetingDays:
+                Array.isArray(cellule.meetingDays) && cellule.meetingDays.length > 0
+                    ? cellule.meetingDays
+                    : [3, 7],
         });
 
         // Trouver et pré-sélectionner l'utilisateur actuel
@@ -167,6 +176,14 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
             return;
         }
 
+        if (
+            !Array.isArray(editedCellule.meetingDays) ||
+            editedCellule.meetingDays.length === 0
+        ) {
+            setError("Sélectionnez au moins un jour de réunion");
+            return;
+        }
+
         setIsLoading(true);
         setError("");
 
@@ -215,6 +232,7 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
             return {
                 ID: cellule.id,
                 "Nom de la cellule": cellule.name,
+                Code: cellule.code || "N/A",
                 "Leader - Nom": leader?.nom || "N/A",
                 "Leader - Prénom": leader?.prenom || "N/A",
                 "Leader - Email": leader?.email || "N/A",
@@ -336,6 +354,7 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                     {[
                                         "Id",
                                         "Nom",
+                                        "Code",
                                         "Leader",
                                         "Localisation",
                                         "Heure de début",
@@ -367,6 +386,17 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                         </td>
                                         <td className="px-3 py-2 font-medium">
                                             {cellule.name}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            {cellule.code ? (
+                                                <span className="font-mono text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                                                    {cellule.code}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">
+                                                    —
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-3 py-2">
                                             {(() => {
@@ -773,6 +803,58 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="01 52 91 97 79"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Jours de réunion *
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { value: 1, label: "Lun" },
+                                            { value: 2, label: "Mar" },
+                                            { value: 3, label: "Mer" },
+                                            { value: 4, label: "Jeu" },
+                                            { value: 5, label: "Ven" },
+                                            { value: 6, label: "Sam" },
+                                            { value: 7, label: "Dim" },
+                                        ].map((d) => {
+                                            const active = (
+                                                editedCellule.meetingDays || []
+                                            ).includes(d.value);
+                                            return (
+                                                <button
+                                                    key={d.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current =
+                                                            editedCellule.meetingDays || [];
+                                                        const next = current.includes(d.value)
+                                                            ? current.filter((x) => x !== d.value)
+                                                            : [...current, d.value].sort(
+                                                                  (a, b) => a - b,
+                                                              );
+                                                        setEditedCellule({
+                                                            ...editedCellule,
+                                                            meetingDays: next,
+                                                        });
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                                                        active
+                                                            ? "bg-blue-600 text-white border-blue-600"
+                                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    }`}
+                                                >
+                                                    {d.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {(editedCellule.meetingDays || []).length === 0 && (
+                                        <p className="text-xs text-red-600 mt-1">
+                                            Sélectionne au moins un jour de réunion.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center">
