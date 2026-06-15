@@ -123,7 +123,20 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         // pas de flow de confirmation email à passer comme pour le signup public.
         dataToSend.isActive = true;
 
-        console.log("Données envoyées:", dataToSend); // Pour debug
+        // On transmet l'id de l'admin connecté comme ownerdId. Si le Bearer
+        // JWT est valide côté backend, ce champ est juste une trace ; s'il
+        // est absent/invalide, le backend le valide en DB et autorise la
+        // création en mode admin LEGACY (cf. signup auth.service.ts).
+        try {
+            const stored = localStorage.getItem("jobhubs_auth");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                const adminId = parsed?.user?.user?.id;
+                if (adminId) dataToSend.ownerdId = adminId;
+            }
+        } catch {
+            /* localStorage indisponible — on continue sans ownerdId */
+        }
 
         setIsLoading(true);
         try {
@@ -141,9 +154,15 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                 role: "USER",
             });
         } catch (err: any) {
+            // createUser propage une `Error` avec le message renvoyé par
+            // le backend (cf. useUsers.js). On l'utilise directement
+            // plutôt que le placeholder générique pour aider l'admin à
+            // comprendre la cause (email déjà utilisé, cellule introuvable,
+            // etc.).
             setError(
-                err.response?.data?.message ||
-                    "Erreur lors de la création de l'utilisateur"
+                err?.message ||
+                err?.response?.data?.message ||
+                "Erreur lors de la création de l'utilisateur"
             );
         } finally {
             setIsLoading(false);

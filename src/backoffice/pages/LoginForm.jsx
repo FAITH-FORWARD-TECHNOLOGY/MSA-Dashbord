@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Eye,
     EyeOff,
@@ -19,8 +19,17 @@ const LoginForm = ({ onLogin }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
 
-    const { login } = useAuth();
+    const { login, isAuthenticated, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+
+    // Si on atterrit sur /login alors qu'un token valide est déjà en
+    // localStorage, on renvoie vers la page principale. Évite que l'admin
+    // voie le formulaire alors que la session est encore active.
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            navigate("/users", { replace: true });
+        }
+    }, [authLoading, isAuthenticated, navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,8 +72,12 @@ const LoginForm = ({ onLogin }) => {
                     onLogin(true);
                 }
 
-                // Rediriger vers la page principale
-                navigate("/users");
+                // App.jsx utilise une instance distincte de useAuth (state
+                // local par hook) qui ne se met pas à jour depuis ici → un
+                // navigate() ne suffit pas, App.jsx continuerait à afficher
+                // LoginForm. On force un reload complet vers /users pour
+                // que App.jsx ré-évalue isAuthenticated depuis localStorage.
+                window.location.assign("/users");
             }
         } catch (err) {
             setError(err.message || "Erreur de connexion. Veuillez réessayer.");

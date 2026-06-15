@@ -134,32 +134,20 @@ const PaysFormModal = ({ onClose, onSuccess }) => {
             onKeyDown={handleKeyDown}
             tabIndex={-1}
         >
-            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white relative overflow-hidden">
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-                    <div className="relative flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-white/20 rounded-full">
-                                <Globe size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold">
-                                    Nouveau pays
-                                </h3>
-                                <p className="text-indigo-100 text-sm">
-                                    Ajouter un pays à la liste
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            disabled={loading}
-                            className="p-2 hover:bg-white/20 rounded-full transition-colors duration-200 disabled:opacity-50"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+                {/* Header sobre — aligné sur EditUserModal */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                        Nouveau pays
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* Content */}
@@ -323,12 +311,12 @@ const PaysFormModal = ({ onClose, onSuccess }) => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-4 border-t border-gray-200">
+                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                             <button
                                 type="button"
                                 onClick={onClose}
                                 disabled={loading}
-                                className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Annuler
                             </button>
@@ -339,18 +327,15 @@ const PaysFormModal = ({ onClose, onSuccess }) => {
                                     !form.nom.trim() ||
                                     !form.code.trim()
                                 }
-                                className="px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center"
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                             >
                                 {loading ? (
-                                    <div className="flex items-center">
-                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                        Création en cours...
-                                    </div>
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        Création en cours…
+                                    </>
                                 ) : (
-                                    <div className="flex items-center">
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Créer le pays
-                                    </div>
+                                    "Créer le pays"
                                 )}
                             </button>
                         </div>

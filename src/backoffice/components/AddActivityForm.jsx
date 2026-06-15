@@ -57,6 +57,13 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
 
+    // Galerie produit : tableau d'objets { url, preview, name, size, uploading }
+    // ajoutés au fil de l'eau ; les URLs sont envoyées au backend dans un
+    // second appel après la création de l'activité (POST /users/:userId/
+    // activities/:activityId/photos accepte un string[]).
+    const [productPhotos, setProductPhotos] = useState([]);
+    const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -270,6 +277,68 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
         if (fileInput) fileInput.value = "";
     };
 
+    // Multi-upload pour la galerie produit. Chaque fichier est uploadé en
+    // parallèle, l'URL renvoyée par l'API est conservée pour le POST final.
+    const handleProductPhotosChange = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        e.target.value = "";
+
+        const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+        const tooBig = files.find((f) => f.size > 5 * 1024 * 1024);
+        const wrongType = files.find((f) => !allowed.includes(f.type));
+        if (wrongType) {
+            setErrors((prev) => ({
+                ...prev,
+                productPhotos: `Format non supporté pour "${wrongType.name}". JPG, PNG, GIF ou WebP uniquement.`,
+            }));
+            return;
+        }
+        if (tooBig) {
+            setErrors((prev) => ({
+                ...prev,
+                productPhotos: `"${tooBig.name}" dépasse 5MB.`,
+            }));
+            return;
+        }
+        if (errors.productPhotos) {
+            setErrors((prev) => ({ ...prev, productPhotos: "" }));
+        }
+
+        setIsUploadingPhotos(true);
+        try {
+            const uploaded = await Promise.all(
+                files.map(async (file) => {
+                    const url = await uploadFile(file);
+                    return {
+                        url,
+                        preview: URL.createObjectURL(file),
+                        name: file.name,
+                        size: file.size,
+                    };
+                }),
+            );
+            setProductPhotos((prev) => [...prev, ...uploaded]);
+        } catch (err) {
+            console.error("Erreur upload photos:", err);
+            setErrors((prev) => ({
+                ...prev,
+                productPhotos: "Erreur pendant l'upload d'une ou plusieurs photos.",
+            }));
+        } finally {
+            setIsUploadingPhotos(false);
+        }
+    };
+
+    const removeProductPhoto = (idx) => {
+        setProductPhotos((prev) => {
+            const next = [...prev];
+            const removed = next.splice(idx, 1)[0];
+            if (removed?.preview) URL.revokeObjectURL(removed.preview);
+            return next;
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
@@ -299,6 +368,29 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
 
             if (!response.ok) {
                 throw new Error("Erreur lors de l'ajout de l'activité");
+            }
+
+            // Si l'admin a ajouté des photos produit, on les rattache à
+            // l'activité fraîchement créée. L'endpoint accepte un string[].
+            if (productPhotos.length > 0) {
+                const createdActivity = await response.json().catch(() => null);
+                const newActivityId = createdActivity?.id ?? createdActivity?.data?.id;
+                if (newActivityId) {
+                    try {
+                        await fetch(
+                            `${API_BASE_URL}/users/${effectiveUserId}/activities/${newActivityId}/photos`,
+                            {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(productPhotos.map((p) => p.url)),
+                            },
+                        );
+                    } catch (photoErr) {
+                        // On n'échoue pas la création pour autant — l'activité
+                        // existe, l'admin pourra ré-uploader les photos via Edit.
+                        console.error("Erreur rattachement photos:", photoErr);
+                    }
+                }
             }
 
             onSuccess();
@@ -443,28 +535,21 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-gradient-to-br from-white to-gray-50 w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white relative overflow-hidden flex-shrink-0">
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-                    <div className="relative flex items-center justify-between">
-                        <div>
-                            <h2 className="text-3xl font-bold mb-2 flex items-center">
-                                Nouvelle activité
-                            </h2>
-                            <p className="text-indigo-100">
-                                Associer une nouvelle activité à l'utilisateur
-                            </p>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white/20 rounded-full transition-colors duration-200 flex-shrink-0"
-                            disabled={isLoading}
-                        >
-                            <X size={24} />
-                        </button>
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white w-full max-w-5xl rounded-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+                {/* Header sobre — aligné sur EditUserModal */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Users className="w-5 h-5 mr-2 text-blue-600" />
+                        Nouvelle activité
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* Form Content */}
@@ -683,6 +768,85 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
                             )}
                         </div>
 
+                        {/* Galerie photos produit */}
+                        <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center text-sm font-semibold text-gray-700">
+                                    <Image
+                                        size={16}
+                                        className="mr-2 text-indigo-500"
+                                    />
+                                    Photos du produit
+                                    {productPhotos.length > 0 && (
+                                        <span className="ml-2 text-xs text-gray-500">
+                                            ({productPhotos.length})
+                                        </span>
+                                    )}
+                                    {isUploadingPhotos && (
+                                        <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                                    )}
+                                </div>
+                                <label
+                                    htmlFor="product-photos-upload"
+                                    className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                                        isUploadingPhotos
+                                            ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                            : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    }`}
+                                >
+                                    <Upload size={14} className="mr-1.5" />
+                                    Ajouter des photos
+                                    <input
+                                        id="product-photos-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleProductPhotosChange}
+                                        disabled={isUploadingPhotos}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+
+                            {productPhotos.length === 0 ? (
+                                <p className="text-xs text-gray-500 text-center py-4">
+                                    Aucune photo ajoutée. Plusieurs photos peuvent être uploadées en une fois. JPG, PNG, GIF ou WebP — max 5MB / photo.
+                                </p>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    {productPhotos.map((p, idx) => (
+                                        <div
+                                            key={`${p.url}-${idx}`}
+                                            className="relative group rounded-lg overflow-hidden border border-gray-200"
+                                        >
+                                            <img
+                                                src={p.preview || p.url}
+                                                alt={p.name || `Photo ${idx + 1}`}
+                                                className="w-full h-24 object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeProductPhoto(idx)}
+                                                className="absolute top-1 right-1 bg-white/90 hover:bg-red-500 hover:text-white text-red-600 rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Supprimer"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {errors.productPhotos && (
+                                <div className="mt-3 flex items-center space-x-2">
+                                    <AlertCircle size={14} className="text-red-500" />
+                                    <p className="text-sm text-red-600">
+                                        {errors.productPhotos}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Main Fields Grid */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {fieldConfig.map((field) => {
@@ -839,31 +1003,28 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
                                 type="button"
                                 onClick={onClose}
                                 disabled={isLoading}
-                                className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Annuler
                             </button>
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={isLoading || isUploadingLogo}
-                                className="px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center"
+                                disabled={isLoading || isUploadingLogo || isUploadingPhotos}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                             >
                                 {isLoading ? (
-                                    <div className="flex items-center">
-                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                        Ajout en cours...
-                                    </div>
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        Ajout en cours…
+                                    </>
                                 ) : isUploadingLogo ? (
-                                    <div className="flex items-center">
-                                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                        Upload en cours...
-                                    </div>
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        Upload en cours…
+                                    </>
                                 ) : (
-                                    <div className="flex items-center">
-                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                        Ajouter l'activité
-                                    </div>
+                                    "Ajouter l'activité"
                                 )}
                             </button>
                         </div>

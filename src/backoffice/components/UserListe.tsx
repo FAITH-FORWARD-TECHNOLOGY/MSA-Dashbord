@@ -24,6 +24,30 @@ type UserListProps = {
     onView?: (id: number) => void;
 };
 
+// Construit la liste compacte de pages à afficher dans la pagination.
+// Renvoie des numéros + `null` aux endroits où placer "…".
+// Exemples (totalPages=39) :
+//   current=1   → [1, 2, 3, 4, 5, null, 39]
+//   current=11  → [1, null, 9, 10, 11, 12, 13, null, 39]
+//   current=39  → [1, null, 35, 36, 37, 38, 39]
+function buildPageList(
+    current: number,
+    total: number,
+): Array<number | null> {
+    // En dessous de 8 pages, on peut toutes les afficher.
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: Array<number | null> = [1];
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
+    if (start > 2) pages.push(null);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < total - 1) pages.push(null);
+    pages.push(total);
+    return pages;
+}
+
 const UserList: React.FC<UserListProps> = ({
     users,
     onUpdate,
@@ -357,24 +381,33 @@ const UserList: React.FC<UserListProps> = ({
                                     </button>
 
                                     <div className="flex space-x-1">
-                                        {Array.from(
-                                            { length: totalPages },
-                                            (_, i) => i + 1
-                                        ).map((page) => (
-                                            <button
-                                                key={page}
-                                                onClick={() =>
-                                                    setCurrentPage(page)
-                                                }
-                                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                                    currentPage === page
-                                                        ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                                                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
+                                        {buildPageList(
+                                            currentPage,
+                                            totalPages,
+                                        ).map((page, idx) =>
+                                            page === null ? (
+                                                <span
+                                                    key={`ellipsis-${idx}`}
+                                                    className="relative inline-flex items-center px-2 py-2 text-sm text-gray-400 select-none"
+                                                >
+                                                    …
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    key={page}
+                                                    onClick={() =>
+                                                        setCurrentPage(page)
+                                                    }
+                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded ${
+                                                        currentPage === page
+                                                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ),
+                                        )}
                                     </div>
 
                                     <button

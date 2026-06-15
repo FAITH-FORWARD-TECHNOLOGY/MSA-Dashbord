@@ -9,11 +9,14 @@ import {
     ChevronRight,
     Users,
     Download,
+    Eye,
 } from "lucide-react";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUsers } from "../hooks/useUsers";
 
 function CelluleList({ cellules, onUpdate, onDelete }) {
+    const navigate = useNavigate();
     const { users } = useUsers();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -236,6 +239,7 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                 "Leader - Nom": leader?.nom || "N/A",
                 "Leader - Prénom": leader?.prenom || "N/A",
                 "Leader - Email": leader?.email || "N/A",
+                Utilisateurs: cellule.usersCount ?? 0,
                 Localisation: cellule.locationDesc || "N/A",
                 "Lien de localisation": cellule.locationLink || "N/A",
                 "Heure de début": cellule.startTime || "N/A",
@@ -356,6 +360,7 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                         "Nom",
                                         "Code",
                                         "Leader",
+                                        "Utilisateurs",
                                         "Localisation",
                                         "Heure de début",
                                         "Téléphone",
@@ -424,6 +429,12 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                             })()}
                                         </td>
                                         <td className="px-3 py-2">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                                <Users className="w-3 h-3 mr-1" />
+                                                {cellule.usersCount ?? 0}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-2">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm">
                                                     {cellule.locationDesc}
@@ -464,24 +475,38 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                             </span>
                                         </td>
                                         <td className="px-3 py-2">
-                                            <div className="flex space-x-2">
+                                            <div className="flex items-center space-x-2">
                                                 <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/cellules/${cellule.id}`,
+                                                        )
+                                                    }
+                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                >
+                                                    <Eye className="w-3 h-3 mr-1" />
+                                                    Voir
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() =>
                                                         openEditModal(cellule)
                                                     }
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="Modifier"
+                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                                 >
-                                                    <PenIcon size={16} />
+                                                    <PenIcon className="w-3 h-3 mr-1" />
+                                                    Modifier
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     onClick={() =>
                                                         openDeleteModal(cellule)
                                                     }
-                                                    className="text-red-600 hover:text-red-900"
-                                                    title="Supprimer"
+                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                                 >
-                                                    <Trash size={16} />
+                                                    <Trash className="w-3 h-3 mr-1" />
+                                                    Supprimer
                                                 </button>
                                             </div>
                                         </td>

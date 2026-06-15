@@ -108,7 +108,7 @@ const AppVersionPage = () => {
     };
 
     return (
-        <div className="p-4 max-w-2xl">
+        <div className="p-4">
             <h2 className="text-2xl font-bold mb-2 text-gray-800">
                 Configuration de version
             </h2>
@@ -124,7 +124,7 @@ const AppVersionPage = () => {
             {!loading && (
                 <form
                     onSubmit={handleSubmit}
-                    className="space-y-4 bg-white p-5 rounded-md shadow-sm border border-gray-200"
+                    className="space-y-4 bg-white p-5 rounded-md shadow-sm border border-gray-200 max-w-2xl mx-auto"
                 >
                     {/* Dernière version (app.version.recommended) */}
                     <div>

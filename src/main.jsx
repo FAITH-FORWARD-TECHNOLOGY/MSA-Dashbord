@@ -10,6 +10,7 @@ import CategoriePage from "./backoffice/pages/CategoriePage.jsx";
 import PagePays from "./backoffice/pages/PagePays.jsx";
 import ActivitePage from "./backoffice/pages/ActivitePage.jsx";
 import CellulePage from "./backoffice/pages/CellulePage.jsx";
+import CelluleDetail from "./backoffice/pages/CelluleDetail.jsx";
 import LoginForm from "./backoffice/pages/LoginForm.jsx";
 // Nouvelle page pour gérer les destinations de covoiturage côté admin.
 import RideDestinationsPage from "./backoffice/pages/RideDestinationsPage.jsx";
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
             {
                 path: "cellules",
                 element: <CellulePage />,
+            },
+            {
+                path: "cellules/:id",
+                element: <CelluleDetail />,
             },
             // Route "/destinations" → CRUD covoiturage (lien dans le Header).
             {
