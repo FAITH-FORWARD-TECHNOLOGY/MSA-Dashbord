@@ -16,7 +16,7 @@ import {
     Image,
     Trash2,
 } from "lucide-react";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, FILE_UPLOAD_URL } from "../config/api";
 
 // Modal d'édition d'une activité existante. Couvre les champs textuels
 // + le logo de l'entreprise + la galerie photos produit. Les photos
@@ -110,7 +110,7 @@ export default function EditActivityModal({ activity, onClose, onSuccess }) {
         const formDataUpload = new FormData();
         formDataUpload.append("file", file);
         const res = await fetch(
-            "https://api-pp.mydigifinance.com/api/v1/file-upload/single",
+            FILE_UPLOAD_URL,
             { method: "POST", body: formDataUpload },
         );
         if (res.status !== 201) throw new Error("Upload échoué");

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, FILE_UPLOAD_URL } from "../config/api";
 import {
     X,
     Upload,
@@ -178,7 +178,7 @@ export default function AddActivityModal({ userId, onClose, onSuccess }) {
 
         try {
             const response = await fetch(
-                "https://api-pp.mydigifinance.com/api/v1/file-upload/single",
+                FILE_UPLOAD_URL,
                 {
                     method: "POST",
                     body: formDataUpload,

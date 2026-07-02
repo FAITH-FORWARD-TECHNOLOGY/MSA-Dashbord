@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { FILE_UPLOAD_URL } from "../config/api";
 
 const ImageUploader = ({
     maxImages = 4,
@@ -19,7 +20,7 @@ const ImageUploader = ({
 
         try {
             const response = await fetch(
-                "https://api-pp.mydigifinance.com/api/v1/file-upload/single",
+                FILE_UPLOAD_URL,
                 {
                     method: "POST",
                     body: formData,

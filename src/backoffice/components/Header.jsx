@@ -28,6 +28,9 @@ const navigation = [
     { name: "Destinations", href: "/destinations" },
     // Configuration de version pour piloter le modal de MAJ mobile.
     { name: "Version App", href: "/app-version" },
+    // Module Bible mobile : plans de lecture + verset du jour.
+    { name: "Plans", href: "/reading-plans" },
+    { name: "Verset du jour", href: "/daily-verse" },
 ];
 
 const userNavigation = [{ name: "Deconexion", href: "#" }];
