@@ -18,19 +18,22 @@ const user = {
         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 
+// Ordre groupe par theme :
+//   1. Gestion des membres  2. Contenus  3. Module Bible  4. Config
 const navigation = [
+    // 1. Gestion des membres
     { name: "Utilisateurs", href: "/users" },
+    { name: "Cellules", href: "/cellules" },
+    // 2. Contenus
     { name: "Activites", href: "/activites" },
     { name: "Catégorie", href: "/categorie" },
     { name: "Pays", href: "/pays" },
-    { name: "Cellules", href: "/cellules" },
-    // Nouveau lien pour la page CRUD des destinations de covoiturage.
     { name: "Destinations", href: "/destinations" },
-    // Configuration de version pour piloter le modal de MAJ mobile.
-    { name: "Version App", href: "/app-version" },
-    // Module Bible mobile : plans de lecture + verset du jour.
+    // 3. Module Bible mobile : plans de lecture + verset du jour
     { name: "Plans", href: "/reading-plans" },
     { name: "Verset du jour", href: "/daily-verse" },
+    // 4. Configuration (modal de MAJ mobile)
+    { name: "Version App", href: "/app-version" },
 ];
 
 const userNavigation = [{ name: "Deconexion", href: "#" }];
