@@ -89,7 +89,7 @@ const CategorieFormModal = ({ onClose, onSuccess }) => {
             onKeyDown={handleKeyDown}
             tabIndex={-1}
         >
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                 {/* Header sobre — aligné sur EditUserModal */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">

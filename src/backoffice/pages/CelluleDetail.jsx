@@ -338,9 +338,9 @@ export default function CelluleDetail() {
                                         </div>
                                         <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-0.5 text-xs text-gray-500">
                                             {u.email && (
-                                                <span className="inline-flex items-center">
-                                                    <Mail className="w-3 h-3 mr-1" />
-                                                    {u.email}
+                                                <span className="inline-flex items-center min-w-0 max-w-full">
+                                                    <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+                                                    <span className="truncate">{u.email}</span>
                                                 </span>
                                             )}
                                             {u.phoneNumber && (

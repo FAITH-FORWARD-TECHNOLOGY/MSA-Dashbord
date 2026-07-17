@@ -134,7 +134,7 @@ const PaysFormModal = ({ onClose, onSuccess }) => {
             onKeyDown={handleKeyDown}
             tabIndex={-1}
         >
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 {/* Header sobre — aligné sur EditUserModal */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
