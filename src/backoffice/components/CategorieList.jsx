@@ -163,8 +163,8 @@ function CategorieList({ categorie, onCategorieUpdate, onCategorieDelete }) {
         <>
             {/* Barre de recherche et bouton d'export */}
             <div className="mb-6">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full sm:max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-gray-400" />
                         </div>
@@ -180,7 +180,7 @@ function CategorieList({ categorie, onCategorieUpdate, onCategorieDelete }) {
                     {/* Bouton d'export Excel */}
                     <button
                         onClick={exportToExcel}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
                         title="Exporter vers Excel"
                     >
                         <Download className="h-4 w-4 mr-2" />

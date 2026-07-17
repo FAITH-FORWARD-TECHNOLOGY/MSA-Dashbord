@@ -186,8 +186,8 @@ const UserList: React.FC<UserListProps> = ({
         <>
             {/* Barre de recherche et bouton d'export */}
             <div className="mb-6">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full sm:max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-gray-400" />
                         </div>
@@ -203,7 +203,7 @@ const UserList: React.FC<UserListProps> = ({
                     {/* Bouton d'export Excel */}
                     <button
                         onClick={exportToExcel}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
                         title="Exporter vers Excel"
                     >
                         <Download className="h-4 w-4 mr-2" />
@@ -248,8 +248,8 @@ const UserList: React.FC<UserListProps> = ({
                                     className="hover:bg-gray-50 transition-colors duration-150"
                                 >
                                     <div className="px-4 py-4 sm:px-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-4 flex-1">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
                                                 <div className="flex-shrink-0">
                                                     <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                                                         <UserIcon className="h-6 w-6 text-gray-600" />
@@ -276,9 +276,9 @@ const UserList: React.FC<UserListProps> = ({
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1">
-                                                        <p className="flex items-center text-sm text-gray-500">
+                                                        <p className="flex items-center text-sm text-gray-500 min-w-0 max-w-full">
                                                             <Mail className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                                                            {user.email}
+                                                            <span className="truncate">{user.email}</span>
                                                         </p>
                                                         {user.phoneNumber && (
                                                             <p className="flex items-center text-sm text-gray-500">
@@ -306,7 +306,7 @@ const UserList: React.FC<UserListProps> = ({
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-2">
+                                            <div className="flex items-center gap-2 flex-wrap flex-shrink-0 pl-14 sm:pl-0">
                                                 <button
                                                     onClick={() =>
                                                         navigate(
