@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { API_BASE_URL, authHeaders } from "../config/api";
+import { API_BASE_URL, authHeaders, handleUnauthorized } from "../config/api";
 
 // CRUD du pool de versets du jour (back-office).
 export function useDailyVerses() {
@@ -14,6 +14,7 @@ export function useDailyVerses() {
             const res = await fetch(`${API_BASE_URL}/daily-verse/admin`, {
                 headers: authHeaders(),
             });
+            if (handleUnauthorized(res)) return;
             if (!res.ok) throw new Error(`Erreur ${res.status}`);
             const body = await res.json();
             setVerses(Array.isArray(body) ? body : body?.data ?? []);

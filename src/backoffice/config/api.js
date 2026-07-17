@@ -37,3 +37,21 @@ export function authHeaders(extra = {}) {
         ...extra,
     };
 }
+
+// A appeler avec la reponse d'un fetch protege. Si le token est invalide/expire
+// (401), on nettoie la session et on renvoie vers /login au lieu de laisser une
+// page cassee avec un 401 muet. Retourne true si un 401 a ete gere.
+export function handleUnauthorized(res) {
+    if (res && res.status === 401) {
+        try {
+            localStorage.removeItem("jobhubs_auth");
+        } catch {
+            /* ignore */
+        }
+        if (!window.location.pathname.startsWith("/login")) {
+            window.location.href = "/login";
+        }
+        return true;
+    }
+    return false;
+}

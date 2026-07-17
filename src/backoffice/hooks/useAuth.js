@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
 
+// Vrai si le JWT est expiré (ou illisible). Evite de rester "connecté" avec un
+// token mort, ce qui provoque des 401 silencieux sur les pages protégées
+// (Plans, Verset du jour...).
+function isJwtExpired(token) {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (!payload?.exp) return false;
+        return Date.now() >= payload.exp * 1000;
+    } catch {
+        return true;
+    }
+}
+
 export function useAuth() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
@@ -16,6 +29,13 @@ export function useAuth() {
             const storedAuth = localStorage.getItem("jobhubs_auth");
             if (storedAuth) {
                 const authData = JSON.parse(storedAuth);
+                const token = authData?.user?.token;
+                // Token expiré -> on déconnecte pour forcer une reconnexion
+                // (sinon 401 sur Plans/Verset du jour sans redirection).
+                if (token && isJwtExpired(token)) {
+                    logout();
+                    return;
+                }
                 setUser(authData?.user);
                 setIsAuthenticated(true);
             }

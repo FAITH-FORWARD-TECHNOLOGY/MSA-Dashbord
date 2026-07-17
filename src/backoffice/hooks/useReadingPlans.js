@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { API_BASE_URL, authHeaders } from "../config/api";
+import { API_BASE_URL, authHeaders, handleUnauthorized } from "../config/api";
 
 // CRUD des plans de lecture (back-office). Liste avec nb de souscrits/termines.
 export function useReadingPlans() {
@@ -14,6 +14,7 @@ export function useReadingPlans() {
             const res = await fetch(`${API_BASE_URL}/reading-plans/admin`, {
                 headers: authHeaders(),
             });
+            if (handleUnauthorized(res)) return;
             if (!res.ok) throw new Error(`Erreur ${res.status}`);
             const body = await res.json();
             setPlans(Array.isArray(body) ? body : body?.data ?? []);
