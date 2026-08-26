@@ -16,6 +16,7 @@ import LoginForm from "./backoffice/pages/LoginForm.jsx";
 import RideDestinationsPage from "./backoffice/pages/RideDestinationsPage.jsx";
 // Page de configuration de version pour piloter le modal de MAJ mobile.
 import AppVersionPage from "./backoffice/pages/AppVersionPage.jsx";
+import CommunicationPage from "./backoffice/pages/CommunicationPage.jsx";
 // Plans de lecture + verset du jour (pilotage du module Bible mobile).
 import ReadingPlansPage from "./backoffice/pages/ReadingPlansPage.jsx";
 import DailyVersePage from "./backoffice/pages/DailyVersePage.jsx";
@@ -76,6 +77,11 @@ const router = createBrowserRouter([
             {
                 path: "daily-verse",
                 element: <DailyVersePage />,
+            },
+            // Module Communication : mediatheque + directs (liens YouTube).
+            {
+                path: "communication",
+                element: <CommunicationPage />,
             },
             {
                 path: "login",

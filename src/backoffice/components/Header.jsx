@@ -32,6 +32,7 @@ const navigation = [
     // 3. Module Bible mobile : plans de lecture + verset du jour
     { name: "Plans", href: "/reading-plans" },
     { name: "Verset du jour", href: "/daily-verse" },
+    { name: "Communication", href: "/communication" },
     // 4. Configuration (modal de MAJ mobile)
     { name: "Version App", href: "/app-version" },
 ];
@@ -63,7 +64,7 @@ function Header() {
 
     return (
         <Disclosure as="nav" className="bg-gray-800 shadow-lg">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex items-center">
                         <div className="shrink-0">
