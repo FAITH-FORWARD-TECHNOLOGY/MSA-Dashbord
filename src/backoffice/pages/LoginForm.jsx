@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ENV_LABEL, ENV_BADGE_CLASS } from "../config/environment";
 import {
     Eye,
     EyeOff,
@@ -111,6 +112,13 @@ const LoginForm = ({ onLogin }) => {
                     <h1 className="text-3xl font-bold text-white mb-2">
                         JobHubs Admin
                     </h1>
+                    {ENV_LABEL && (
+                        <span
+                            className={`inline-block mb-2 px-2.5 py-1 rounded text-xs font-bold tracking-wide ${ENV_BADGE_CLASS}`}
+                        >
+                            {ENV_LABEL}
+                        </span>
+                    )}
                     <p className="text-indigo-200">
                         Connectez-vous à votre espace d'administration
                     </p>

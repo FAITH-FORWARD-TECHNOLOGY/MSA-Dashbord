@@ -10,6 +10,7 @@ import {
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { ENV_LABEL, ENV_BADGE_CLASS } from "../config/environment";
 
 const user = {
     name: "Tom Cook",
@@ -80,6 +81,14 @@ function Header() {
                                 <span className="font-semibold text-lg hidden sm:block">
                                     JobHubs
                                 </span>
+                                {ENV_LABEL && (
+                                    <span
+                                        className={`px-2 py-0.5 rounded text-[11px] font-bold tracking-wide ${ENV_BADGE_CLASS}`}
+                                        title="Environnement de test — ce n'est pas la production"
+                                    >
+                                        {ENV_LABEL}
+                                    </span>
+                                )}
                             </Link>
                         </div>
                         <div className="hidden md:block">
