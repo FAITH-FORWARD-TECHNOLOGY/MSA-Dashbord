@@ -87,7 +87,10 @@ export function useActivites() {
             });
 
             if (!response.ok) {
-                throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                // statusText est vide en HTTP/2 : le message utile est dans le
+                // corps JSON renvoye par NestJS ({statusCode, message}).
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.message || `Erreur ${response.status}`);
             }
 
             // Recharger les données après la mise à jour
@@ -110,7 +113,10 @@ export function useActivites() {
             });
 
             if (!response.ok) {
-                throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                // statusText est vide en HTTP/2 : le message utile est dans le
+                // corps JSON renvoye par NestJS ({statusCode, message}).
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.message || `Erreur ${response.status}`);
             }
 
             // Recharger les données après la suppression

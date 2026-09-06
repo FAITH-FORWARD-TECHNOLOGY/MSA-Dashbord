@@ -14,6 +14,17 @@ function isJwtExpired(token) {
     }
 }
 
+
+// Le backend renvoie la session sous la forme { user: {...profil}, token }.
+// On aplatit le profil au premier niveau pour que les composants lisent
+// simplement user.id / user.nom / user.role, tout en conservant `user` et
+// `token` pour le code existant. Sans cela, user.id valait undefined et la
+// creation de cellule partait en /cellules/create/undefined.
+function normalizeSession(session) {
+    if (!session) return session;
+    return { ...(session.user ?? {}), ...session };
+}
+
 export function useAuth() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
@@ -36,7 +47,7 @@ export function useAuth() {
                     logout();
                     return;
                 }
-                setUser(authData?.user);
+                setUser(normalizeSession(authData?.user));
                 setIsAuthenticated(true);
             }
         } catch (error) {
@@ -73,7 +84,7 @@ export function useAuth() {
                 };
 
                 localStorage.setItem("jobhubs_auth", JSON.stringify(authData));
-                setUser(result.data);
+                setUser(normalizeSession(result.data));
                 setIsAuthenticated(true);
 
                 return { success: true, user: result.data };
