@@ -7,6 +7,10 @@ function CelluleFormModal({ onClose, onSuccess }) {
     const { createCellule } = useCellules();
     const { users } = useUsers();
     const { user } = useAuth();
+    // useAuth expose l'objet de session complet ({ user: {...profil}, token }) :
+    // l'identifiant de l'admin est donc imbrique. Sans ce deballage, l'URL
+    // partait en /cellules/create/undefined et le backend repondait 500.
+    const currentUserId = user?.user?.id ?? user?.id;
     const [formData, setFormData] = useState({
         name: "",
         leaderPersonId: "",
@@ -44,7 +48,6 @@ function CelluleFormModal({ onClose, onSuccess }) {
         setSearchTerm(`${user.nom} ${user.prenom} (${user.email})`);
         setIsDropdownOpen(false);
     };
-console.log(user);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -66,6 +69,11 @@ console.log(user);
             return;
         }
 
+        if (!currentUserId) {
+            setError("Session invalide : reconnectez-vous pour créer une cellule.");
+            return;
+        }
+
         setIsLoading(true);
         setError("");
 
@@ -73,7 +81,7 @@ console.log(user);
             await createCellule({
                 ...formData,
                 leaderPersonId: parseInt(formData.leaderPersonId),
-            },user.id);
+            }, currentUserId);
             onSuccess();
         } catch (err) {
             setError(err.message || "Erreur lors de la création de la cellule");
@@ -113,8 +121,11 @@ console.log(user);
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto p-4">
+            {/* Deux colonnes : le formulaire tenait sur ~1400 px de haut en
+                colonne unique, ce qui obligeait a defiler pour atteindre les
+                boutons. */}
+            <div className="relative my-8 p-6 border w-full max-w-3xl shadow-lg rounded-md bg-white">
                 <div className="mt-3">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium text-gray-900">
@@ -134,8 +145,8 @@ console.log(user);
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+                        <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Nom de la cellule *
                             </label>
@@ -150,7 +161,7 @@ console.log(user);
                             />
                         </div>
 
-                        <div className="relative">
+                        <div className="relative sm:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Leader de la cellule *
                             </label>
@@ -257,7 +268,7 @@ console.log(user);
                             )}
                         </div>
 
-                        <div>
+                        <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Description localisation *
                             </label>
@@ -272,7 +283,7 @@ console.log(user);
                             />
                         </div>
 
-                        <div>
+                        <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Lien localisation
                             </label>
@@ -314,7 +325,7 @@ console.log(user);
                             />
                         </div>
 
-                        <div>
+                        <div className="sm:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Jours de réunion *
                             </label>
@@ -352,7 +363,7 @@ console.log(user);
                             )}
                         </div>
 
-                        <div className="flex items-center">
+                        <div className="flex items-center sm:col-span-2">
                             <input
                                 type="checkbox"
                                 name="isActive"
@@ -365,7 +376,7 @@ console.log(user);
                             </label>
                         </div>
 
-                        <div className="flex justify-end space-x-3 mt-6">
+                        <div className="flex justify-end space-x-3 mt-2 sm:col-span-2">
                             <button
                                 type="button"
                                 onClick={onClose}
