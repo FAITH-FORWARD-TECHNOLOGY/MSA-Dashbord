@@ -37,6 +37,11 @@ export function useStatistiquesCellules() {
                 headers: authHeaders(),
             });
             if (handleUnauthorized(res)) return;
+            // 403 = aucune cellule autorisée : même affichage qu'une liste vide.
+            if (res.status === 403) {
+                setCellules([]);
+                return;
+            }
             if (!res.ok) throw new Error(await messageErreur(res));
             const body = await res.json();
             setCellules(Array.isArray(body) ? body : []);
