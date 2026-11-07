@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { ENV_LABEL } from "./backoffice/config/environment";
 import { createRoot } from "react-dom/client";
+import { installerJetonSurFetch } from "./backoffice/config/api";
 import "./index.css";
 import App from "./App.jsx";
 import MainLayout from "./backoffice/MainLayout.jsx";
@@ -103,6 +104,8 @@ const router = createBrowserRouter([
 // Titre de l'onglet : suffixe l'environnement pour distinguer les instances
 // ouvertes cote a cote dans le navigateur.
 if (ENV_LABEL) document.title = `${document.title} — ${ENV_LABEL}`;
+
+installerJetonSurFetch();
 
 createRoot(document.getElementById("root")).render(
     <StrictMode>
