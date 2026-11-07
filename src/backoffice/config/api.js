@@ -22,14 +22,17 @@ export const FILE_UPLOAD_URL =
 // En-tetes avec le Bearer token de l'admin connecte (stocke par useAuth dans
 // localStorage.jobhubs_auth.user.token). Pour les endpoints proteges (plans,
 // verset du jour), qui exigent un compte authentifie cote backend.
-export function authHeaders(extra = {}) {
-    let token = "";
+function lireJeton() {
     try {
         const stored = localStorage.getItem("jobhubs_auth");
-        if (stored) token = JSON.parse(stored)?.user?.token ?? "";
+        return stored ? (JSON.parse(stored)?.user?.token ?? "") : "";
     } catch {
-        token = "";
+        return "";
     }
+}
+
+export function authHeaders(extra = {}) {
+    const token = lireJeton();
     return {
         accept: "*/*",
         "Content-Type": "application/json",
@@ -54,4 +57,24 @@ export function handleUnauthorized(res) {
         return true;
     }
     return false;
+}
+
+// Le backend exige un jeton sur toutes ses routes non publiques : tout appel
+// fetch vers l'API qui n'en porte pas recoit celui de l'admin connecte.
+export function installerJetonSurFetch() {
+    if (typeof window === "undefined" || window.__msaFetchAvecJeton) return;
+    const fetchNatif = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+        const url = typeof input === "string" ? input : (input?.url ?? String(input));
+        if (!url.startsWith(API_BASE_URL)) return fetchNatif(input, init);
+        const headers = new Headers(
+            init.headers ?? (input instanceof Request ? input.headers : undefined),
+        );
+        const token = lireJeton();
+        if (token && !headers.has("Authorization")) {
+            headers.set("Authorization", `Bearer ${token}`);
+        }
+        return fetchNatif(input, { ...init, headers });
+    };
+    window.__msaFetchAvecJeton = true;
 }
