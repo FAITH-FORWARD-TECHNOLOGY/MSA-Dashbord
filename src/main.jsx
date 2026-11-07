@@ -59,6 +59,14 @@ const router = createBrowserRouter([
                 path: "cellules/:id",
                 element: <CelluleDetail />,
             },
+            // Statistiques des présences ; chargée à la demande (Recharts hors bundle principal).
+            {
+                path: "statistiques",
+                lazy: () =>
+                    import("./backoffice/pages/StatistiquesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             // Route "/destinations" → CRUD covoiturage (lien dans le Header).
             {
                 path: "destinations",

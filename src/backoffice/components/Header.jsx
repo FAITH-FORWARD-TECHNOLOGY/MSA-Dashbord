@@ -25,6 +25,7 @@ const navigation = [
     // 1. Gestion des membres
     { name: "Utilisateurs", href: "/users" },
     { name: "Cellules", href: "/cellules" },
+    { name: "Statistiques", href: "/statistiques" },
     // 2. Contenus
     { name: "Activites", href: "/activites" },
     { name: "Catégorie", href: "/categorie" },
