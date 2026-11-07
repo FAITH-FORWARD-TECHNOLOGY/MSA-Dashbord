@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* Couleurs du suivi des présences (maquette client, identiques à l'app mobile). */
+@theme {
+    --color-suivi-ok: #c6efce;
+    --color-suivi-nok: #f4b183;
+    --color-suivi-na: #d9d9d9;
+    --color-suivi-encre: #1f2937;
+}

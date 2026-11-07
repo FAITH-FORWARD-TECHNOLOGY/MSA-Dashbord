@@ -6,6 +6,7 @@ import {
 } from "../hooks/useStatistiques";
 import {
     BarreExport,
+    CarteRegularite,
     EtatErreur,
     EtatVide,
     FOCUS,
@@ -18,6 +19,7 @@ import {
     erreurPeriode,
     nomFichierExport,
     periodeParDefaut,
+    pluriel,
 } from "../components/statistiques/format";
 
 // Page « Statistiques » : suivi, évolution et liste des présents par cellule.
@@ -29,7 +31,7 @@ const ONGLETS = [
 ];
 
 const CHAMP =
-    "block w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+    "block w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
 
 const StatistiquesPage = () => {
     const cellulesApi = useStatistiquesCellules();
@@ -121,6 +123,21 @@ const StatistiquesPage = () => {
 
     const Vue = onglet.Vue;
 
+    // Régularité globale du Suivi, affichée à côté de ses boutons d'export.
+    const suivi = volets.suivi;
+    const carteRegularite =
+        ongletId === "suivi" && !erreurFiltre && !suivi.error ? (
+            <CarteRegularite
+                chargement={suivi.loading || !suivi.data}
+                taux={suivi.data?.tauxGlobal == null ? "—" : `${suivi.data.tauxGlobal} %`}
+                detail={`${pluriel(suivi.data?.cellules?.length ?? 0, "cellule")} · ${pluriel(
+                    suivi.data?.dates?.length ?? 0,
+                    "jour de réunion",
+                    "jours de réunion"
+                )}`}
+            />
+        ) : null;
+
     return (
         <div className="p-4">
             {enTete}
@@ -179,7 +196,7 @@ const StatistiquesPage = () => {
             </div>
 
             {/* Onglets + exports */}
-            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-end sm:justify-between">
                 <div role="tablist" aria-label="Volets des statistiques" className="flex flex-wrap gap-2">
                     {ONGLETS.map((o, i) => {
                         const actif = o.id === ongletId;
@@ -209,6 +226,7 @@ const StatistiquesPage = () => {
                     formats={onglet.formats}
                     onExport={exporter}
                     desactive={Boolean(erreurFiltre)}
+                    avant={carteRegularite}
                 />
             </div>
 

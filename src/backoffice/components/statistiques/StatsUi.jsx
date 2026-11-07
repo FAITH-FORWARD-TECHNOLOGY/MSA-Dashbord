@@ -4,6 +4,7 @@ import {
     FileSpreadsheet,
     FileText,
     Inbox,
+    ChartLine,
     Loader2,
     RefreshCw,
 } from "lucide-react";
@@ -68,8 +69,36 @@ const LIBELLES = {
     pdf: { texte: "Exporter PDF", Icone: FileText },
 };
 
+// Carte « Régularité globale » posée à côté des boutons d'export.
+export function CarteRegularite({ taux, detail, chargement }) {
+    return (
+        <div
+            className="flex items-center gap-3 rounded-md border border-blue-100 bg-blue-50 px-4 py-2 basis-full sm:basis-auto"
+            aria-busy={chargement}
+        >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-blue-600">
+                <ChartLine className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-500">Régularité globale</p>
+                {chargement ? (
+                    <div className="mt-1 h-6 w-28 rounded bg-blue-100 animate-pulse">
+                        <span className="sr-only">Chargement…</span>
+                    </div>
+                ) : (
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-2xl font-bold leading-tight text-blue-800">{taux}</span>
+                        <span className="text-xs text-gray-500">{detail}</span>
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // Boutons d'export d'un onglet ; onExport(format) télécharge le fichier.
-export function BarreExport({ formats, onExport, desactive }) {
+// `avant` : élément affiché sur la même ligne, à la même hauteur que les boutons.
+export function BarreExport({ formats, onExport, desactive, avant }) {
     const [enCours, setEnCours] = useState(null);
     const [erreur, setErreur] = useState("");
 
@@ -87,7 +116,8 @@ export function BarreExport({ formats, onExport, desactive }) {
 
     return (
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-stretch gap-2">
+                {avant}
                 {formats.map((format) => {
                     const { texte, Icone } = LIBELLES[format];
                     const actif = enCours === format;

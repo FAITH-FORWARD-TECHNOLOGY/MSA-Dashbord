@@ -1,20 +1,21 @@
 import React from "react";
 import { EtatVide } from "./StatsUi";
-import { dateCourte, dateFr, jourSemaine } from "./format";
+import { dateFr, grouperParMois, jourDuMois, jourSemaine, moisAnnee } from "./format";
 
 // Onglet Suivi : tableau OK / NOK / NA (cellules en lignes, jours en colonnes).
 
+// Couleurs exactes de la maquette client (tokens suivi-* de index.css).
 const STATUTS = {
     OK: {
-        classe: "bg-green-100 text-green-800",
+        classe: "bg-suivi-ok text-suivi-encre",
         legende: "Présences saisies (au moins une personne)",
     },
     NOK: {
-        classe: "bg-red-100 text-red-700",
+        classe: "bg-suivi-nok text-suivi-encre",
         legende: "Jour de réunion passé sans aucune présence saisie",
     },
     NA: {
-        classe: "bg-gray-100 text-gray-600",
+        classe: "bg-suivi-na text-suivi-encre",
         legende: "Jour neutre (pas de réunion ce jour-là)",
     },
 };
@@ -36,7 +37,7 @@ function LegendeSuivi() {
             {Object.entries(STATUTS).map(([statut, { classe, legende }]) => (
                 <li key={statut} className="flex items-center gap-2">
                     <span
-                        className={`inline-flex items-center justify-center w-10 py-0.5 rounded text-xs font-semibold ${classe}`}
+                        className={`inline-flex items-center justify-center min-w-10 px-2.5 py-0.5 rounded-full text-xs font-semibold ${classe}`}
                     >
                         {statut}
                     </span>
@@ -44,7 +45,10 @@ function LegendeSuivi() {
                 </li>
             ))}
             <li className="flex items-center gap-2">
-                <span className="inline-block w-10 h-5 rounded border border-gray-200 bg-white" />
+                <span
+                    className="inline-block min-w-10 h-5 rounded-full border border-gray-300 bg-white"
+                    aria-hidden="true"
+                />
                 Pas de réunion prévue, ou date future
             </li>
         </ul>
@@ -54,6 +58,7 @@ function LegendeSuivi() {
 export default function SuiviTab({ data }) {
     const dates = data?.dates ?? [];
     const lignes = data?.cellules ?? [];
+    const mois = grouperParMois(dates);
 
     if (lignes.length === 0 || dates.length === 0) {
         return (
@@ -77,26 +82,44 @@ export default function SuiviTab({ data }) {
                         <tr>
                             <th
                                 scope="col"
-                                className="sticky left-0 z-10 bg-gray-50 text-left p-3 min-w-40"
+                                rowSpan={2}
+                                className="sticky left-0 z-10 bg-gray-50 text-left p-3 min-w-40 align-bottom"
                             >
                                 Cellule
                             </th>
+                            {mois.map((m, i) => (
+                                <th
+                                    key={m.cle}
+                                    scope="colgroup"
+                                    colSpan={m.dates.length}
+                                    className={`px-2 pt-2 pb-1 text-left text-xs font-semibold text-gray-700 whitespace-nowrap ${i > 0 ? "border-l border-gray-200" : ""}`}
+                                >
+                                    {moisAnnee(m.dates[0])}
+                                </th>
+                            ))}
+                            {["OK", "NOK", "NA"].map((t) => (
+                                <th key={t} scope="col" rowSpan={2} className="p-2 text-center align-bottom">
+                                    {t}
+                                </th>
+                            ))}
+                            <th scope="col" rowSpan={2} className="p-2 text-center align-bottom">
+                                <abbr title="Régularité" className="no-underline">Régul.</abbr>
+                            </th>
+                        </tr>
+                        <tr>
                             {dates.map((date) => (
                                 <th
                                     key={date}
                                     scope="col"
-                                    className="p-2 text-center font-medium whitespace-nowrap"
+                                    aria-label={dateFr(date)}
+                                    className="px-1 pb-2 text-center font-semibold text-gray-700 whitespace-nowrap"
                                 >
-                                    <span className="block text-xs text-gray-400">
+                                    <span className="block text-[11px] font-normal text-gray-400">
                                         {jourSemaine(date)}
                                     </span>
-                                    {dateCourte(date)}
+                                    {jourDuMois(date)}
                                 </th>
                             ))}
-                            <th scope="col" className="p-2 text-center">OK</th>
-                            <th scope="col" className="p-2 text-center">NOK</th>
-                            <th scope="col" className="p-2 text-center">NA</th>
-                            <th scope="col" className="p-2 text-center">Taux</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -119,7 +142,7 @@ export default function SuiviTab({ data }) {
                                         >
                                             {style ? (
                                                 <span
-                                                    className={`inline-flex flex-col items-center justify-center w-12 py-1 rounded text-xs font-semibold ${style.classe}`}
+                                                    className={`inline-flex flex-col items-center justify-center w-12 min-h-10 py-1 rounded-md text-xs font-semibold ${style.classe}`}
                                                 >
                                                     {c.statut}
                                                     {c.statut === "OK" && (
@@ -151,7 +174,7 @@ export default function SuiviTab({ data }) {
                                 scope="row"
                                 className="sticky left-0 z-10 bg-gray-50 text-left p-3 font-semibold"
                             >
-                                Taux de saisie
+                                Régularité du jour
                             </th>
                             {dates.map((date) => (
                                 <td
@@ -170,7 +193,7 @@ export default function SuiviTab({ data }) {
                 </table>
             </div>
             <p className="text-xs text-gray-500">
-                Taux = OK / (OK + NOK). Survolez une case pour voir le nombre de
+                Régularité = OK / (OK + NOK). Survolez une case pour voir le nombre de
                 présents et le thème du jour.
             </p>
         </div>
