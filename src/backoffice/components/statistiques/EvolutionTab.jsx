@@ -270,7 +270,9 @@ export default function EvolutionTab({ data }) {
     }
 
     return (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div
+            className={`grid gap-4 ${cellules.length > 1 ? "lg:grid-cols-2" : ""}`}
+        >
             {cellules.map((c) => (
                 <CarteCellule key={c.id} cellule={c} />
             ))}
