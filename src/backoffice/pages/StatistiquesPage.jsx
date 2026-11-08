@@ -1,9 +1,11 @@
 import React, { useRef, useState } from "react";
+import { CalendarX, CheckCircle2, X } from "lucide-react";
 import {
     telechargerExport,
     useStatistiquesCellules,
     useStatistiquesVolet,
 } from "../hooks/useStatistiques";
+import { estDonneePerimee, trouverJourNa, useJoursNa } from "../hooks/useJoursNa";
 import {
     BarreExport,
     CarteRegularite,
@@ -15,11 +17,15 @@ import {
 import SuiviTab from "../components/statistiques/SuiviTab";
 import EvolutionTab from "../components/statistiques/EvolutionTab";
 import PresentsTab from "../components/statistiques/PresentsTab";
+import { JourNaDetailModal, JourNaFormModal } from "../components/statistiques/JoursNaModales";
+import { horsPeriode, periodeIncluant } from "../components/statistiques/joursNa";
 import {
+    dateFr,
     erreurPeriode,
     nomFichierExport,
     periodeParDefaut,
     pluriel,
+    versYmd,
 } from "../components/statistiques/format";
 
 // Page « Statistiques » : suivi, évolution et liste des présents par cellule.
@@ -39,6 +45,12 @@ const StatistiquesPage = () => {
     const [celluleId, setCelluleId] = useState("");
     const [ongletId, setOngletId] = useState("suivi");
     const refsOnglets = useRef([]);
+    const refBoutonNa = useRef(null);
+    // Modales des jours NA : détail d'une case, puis formulaire (création si jour null).
+    const [naDetail, setNaDetail] = useState(null);
+    const [naForm, setNaForm] = useState(null);
+    // Confirmation après écriture NA : { texte, date? } (date = hors période affichée).
+    const [avisNa, setAvisNa] = useState(null);
 
     const filtres = { du: periode.du, au: periode.au, celluleId };
     const erreurFiltre = erreurPeriode(periode.du, periode.au);
@@ -54,8 +66,52 @@ const StatistiquesPage = () => {
         evolution: useStatistiquesVolet(ONGLETS[1].chemin, filtres, pret && ongletId === "evolution"),
         presents: useStatistiquesVolet(ONGLETS[2].chemin, filtres, pret && ongletId === "presents"),
     };
+    const joursNa = useJoursNa(filtres, pret && ongletId === "suivi");
     const onglet = ONGLETS.find((o) => o.id === ongletId);
     const volet = volets[ongletId];
+
+    // Après une écriture NA : les trois volets et la liste NA sont rechargés.
+    const apresEcriture = () => {
+        volets.suivi.recharger();
+        volets.evolution.recharger();
+        volets.presents.recharger();
+        joursNa.recharger();
+    };
+    // 403 / 404 : données périmées, on recharge aussi les cellules avant de relancer l'erreur.
+    const ecrireNa = async (action) => {
+        try {
+            const res = await action();
+            apresEcriture();
+            return res;
+        } catch (err) {
+            if (estDonneePerimee(err)) {
+                apresEcriture();
+                cellulesApi.recharger({ silencieux: true });
+                err.message = `${err.message} — les données ont été actualisées.`;
+            }
+            throw err;
+        }
+    };
+    const enregistrerNa = async (corps) => {
+        const jour = naForm?.jour;
+        setAvisNa(null);
+        const res = await ecrireNa(() =>
+            jour ? joursNa.modifier(jour.groupe, corps) : joursNa.creer(corps)
+        );
+        const date = res?.date ?? jour?.date ?? corps.date;
+        const nb = pluriel(res?.cellules?.length ?? corps.celluleIds?.length ?? 0, "cellule");
+        setAvisNa({
+            texte: jour
+                ? `Jour NA du ${dateFr(date)} modifié (${nb}).`
+                : `Jour NA du ${dateFr(date)} enregistré pour ${nb}.`,
+            date: horsPeriode(date, periode) ? date : null,
+        });
+    };
+    const supprimerNa = async (jour) => {
+        setAvisNa(null);
+        await ecrireNa(() => joursNa.supprimer(jour.groupe));
+        setAvisNa({ texte: `Jour NA du ${dateFr(jour.date)} supprimé.`, date: null });
+    };
 
     const nomCellule =
         cellulesApi.cellules.find((c) => String(c.id) === celluleId)?.name ?? "";
@@ -136,6 +192,21 @@ const StatistiquesPage = () => {
                     "jours de réunion"
                 )}`}
             />
+        ) : null;
+
+    // Même hauteur que la carte et les exports (ligne en items-stretch).
+    const boutonNa =
+        ongletId === "suivi" ? (
+            <button
+                ref={refBoutonNa}
+                type="button"
+                onClick={() => setNaForm({ jour: null })}
+                aria-haspopup="dialog"
+                className={`inline-flex items-center justify-center gap-2 flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md border border-blue-600 bg-white text-blue-700 hover:bg-blue-50 transition-colors duration-200 ${FOCUS}`}
+            >
+                <CalendarX className="h-4 w-4" aria-hidden="true" />
+                Marquer un jour NA
+            </button>
         ) : null;
 
     return (
@@ -226,8 +297,50 @@ const StatistiquesPage = () => {
                     formats={onglet.formats}
                     onExport={exporter}
                     desactive={Boolean(erreurFiltre)}
-                    avant={carteRegularite}
+                    avant={
+                        <>
+                            {carteRegularite}
+                            {boutonNa}
+                        </>
+                    }
                 />
+            </div>
+
+            {/* Région toujours présente pour que l'annonce soit lue par les lecteurs d'écran. */}
+            <div role="status" aria-live="polite">
+                {avisNa && (
+                    <div className="mb-4 flex flex-col gap-2 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-800 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
+                            <span>
+                                {avisNa.texte}
+                                {avisNa.date && " Cette date est hors de la période affichée."}
+                            </span>
+                        </p>
+                        <div className="flex shrink-0 items-center gap-2">
+                            {avisNa.date && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPeriode((p) => periodeIncluant(p, avisNa.date));
+                                        setAvisNa(null);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-md border border-green-300 bg-white text-sm font-medium text-green-800 hover:bg-green-100 ${FOCUS}`}
+                                >
+                                    Afficher le {dateFr(avisNa.date)}
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setAvisNa(null)}
+                                aria-label="Masquer le message"
+                                className={`rounded-md p-1 text-green-700 hover:bg-green-100 ${FOCUS}`}
+                            >
+                                <X className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div
@@ -243,9 +356,37 @@ const StatistiquesPage = () => {
                 ) : volet.loading || !volet.data ? (
                     <Squelette lignes={onglet.id === "evolution" ? 1 : 5} hauteur={onglet.id === "evolution" ? "h-64" : "h-8"} />
                 ) : (
-                    <Vue data={volet.data} />
+                    <Vue data={volet.data} onOuvrirNa={(infos, element) => setNaDetail({ infos, element })} />
                 )}
             </div>
+
+            {naDetail && (
+                <JourNaDetailModal
+                    infos={naDetail.infos}
+                    origine={naDetail.element}
+                    jour={trouverJourNa(joursNa.jours, naDetail.infos.date, naDetail.infos.celluleId)}
+                    chargement={joursNa.loading}
+                    erreur={joursNa.error}
+                    onRecharger={joursNa.recharger}
+                    onModifier={(jour) => {
+                        setNaDetail(null);
+                        setNaForm({ jour });
+                    }}
+                    onSupprimer={supprimerNa}
+                    onFermer={() => setNaDetail(null)}
+                    retourFocus={refBoutonNa}
+                />
+            )}
+            {naForm && (
+                <JourNaFormModal
+                    jour={naForm.jour}
+                    cellules={cellulesApi.cellules}
+                    dateInitiale={versYmd(new Date())}
+                    onEnregistrer={enregistrerNa}
+                    onFermer={() => setNaForm(null)}
+                    retourFocus={refBoutonNa}
+                />
+            )}
         </div>
     );
 };

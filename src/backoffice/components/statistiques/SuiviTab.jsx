@@ -1,5 +1,5 @@
 import React from "react";
-import { EtatVide } from "./StatsUi";
+import { EtatVide, FOCUS } from "./StatsUi";
 import { dateFr, grouperParMois, jourDuMois, jourSemaine, moisAnnee } from "./format";
 
 // Onglet Suivi : tableau OK / NOK / NA (cellules en lignes, jours en colonnes).
@@ -16,7 +16,7 @@ const STATUTS = {
     },
     NA: {
         classe: "bg-suivi-na text-suivi-encre",
-        legende: "Jour neutre (pas de réunion ce jour-là)",
+        legende: "Autre activité / pas de réunion",
     },
 };
 
@@ -27,6 +27,7 @@ function infoCase(date, c) {
     if (c?.statut) morceaux.push(c.statut);
     if (c?.presents) morceaux.push(`${c.presents} présent(s)`);
     if (c?.theme) morceaux.push(`Thème : ${c.theme}`);
+    if (c?.statut === "NA") morceaux.push(c.motif ? `Motif : ${c.motif}` : "aucun motif saisi");
     if (!c?.statut) morceaux.push("pas de réunion prévue ou date future");
     return morceaux.join(" — ");
 }
@@ -55,7 +56,7 @@ function LegendeSuivi() {
     );
 }
 
-export default function SuiviTab({ data }) {
+export default function SuiviTab({ data, onOuvrirNa }) {
     const dates = data?.dates ?? [];
     const lignes = data?.cellules ?? [];
     const mois = grouperParMois(dates);
@@ -140,7 +141,28 @@ export default function SuiviTab({ data }) {
                                             className="p-1 text-center"
                                             title={infoCase(date, c)}
                                         >
-                                            {style ? (
+                                            {c?.statut === "NA" && onOuvrirNa ? (
+                                                // Case NA cliquable : ouvre le détail du jour (motif, cellules).
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        onOuvrirNa(
+                                                            { date, celluleId: l.celluleId, nomCellule: l.nom, motif: c.motif ?? null },
+                                                            e.currentTarget
+                                                        )
+                                                    }
+                                                    aria-label={`${l.nom}, ${infoCase(date, c)}. Voir le détail du jour NA`}
+                                                    aria-haspopup="dialog"
+                                                    className={`inline-flex flex-col items-center justify-center w-12 min-h-10 py-1 rounded-md text-xs font-semibold cursor-pointer hover:ring-2 hover:ring-gray-400 ${style.classe} ${FOCUS}`}
+                                                >
+                                                    {c.statut}
+                                                    {c.presents > 0 && (
+                                                        <span className="font-normal">
+                                                            {c.presents}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ) : style ? (
                                                 <span
                                                     className={`inline-flex flex-col items-center justify-center w-12 min-h-10 py-1 rounded-md text-xs font-semibold ${style.classe}`}
                                                 >
@@ -194,7 +216,8 @@ export default function SuiviTab({ data }) {
             </div>
             <p className="text-xs text-gray-500">
                 Régularité = OK / (OK + NOK). Survolez une case pour voir le nombre de
-                présents et le thème du jour.
+                présents et le thème du jour ; cliquez sur une case NA pour voir son
+                motif, le modifier ou le supprimer.
             </p>
         </div>
     );

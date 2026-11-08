@@ -5,7 +5,7 @@ import { API_BASE_URL, authHeaders, handleUnauthorized } from "../config/api";
 const BASE = `${API_BASE_URL}/statistiques`;
 
 // Message d'erreur NestJS (message texte ou tableau de messages de validation).
-async function messageErreur(res) {
+export async function messageErreur(res) {
     const body = await res.json().catch(() => ({}));
     const msg = Array.isArray(body?.message)
         ? body.message.join(" ; ")
@@ -14,7 +14,7 @@ async function messageErreur(res) {
 }
 
 // Query string sans les paramètres vides (celluleId absent = toutes).
-function construireUrl(chemin, params) {
+export function construireUrl(chemin, params) {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
@@ -29,10 +29,13 @@ export function useStatistiquesCellules() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const charger = useCallback(async () => {
+    // silencieux : garde la liste affichée (pas de squelette, pas d'état d'erreur).
+    const charger = useCallback(async ({ silencieux = false } = {}) => {
         try {
-            setLoading(true);
-            setError("");
+            if (!silencieux) {
+                setLoading(true);
+                setError("");
+            }
             const res = await fetch(`${BASE}/cellules`, {
                 headers: authHeaders(),
             });
@@ -46,7 +49,7 @@ export function useStatistiquesCellules() {
             const body = await res.json();
             setCellules(Array.isArray(body) ? body : []);
         } catch (err) {
-            setError(err.message || "Échec du chargement des cellules");
+            if (!silencieux) setError(err.message || "Échec du chargement des cellules");
         } finally {
             setLoading(false);
         }
