@@ -7,39 +7,70 @@ import {
     MenuItem,
     MenuItems,
 } from "@headlessui/react";
-import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+    Bars3Icon,
+    ChevronDownIcon,
+    XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ENV_LABEL, ENV_BADGE_CLASS } from "../config/environment";
 
-const user = {
-    name: "Tom Cook",
-    email: "tom@example.com",
-    imageUrl:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-};
-
-// Ordre groupe par theme :
-//   1. Gestion des membres  2. Contenus  3. Module Bible  4. Config
+// Navigation groupée par thème : un menu déroulant par groupe.
 const navigation = [
-    // 1. Gestion des membres
-    { name: "Utilisateurs", href: "/users" },
-    { name: "Cellules", href: "/cellules" },
-    { name: "Statistiques", href: "/statistiques" },
-    // 2. Contenus
-    { name: "Activites", href: "/activites" },
-    { name: "Catégorie", href: "/categorie" },
-    { name: "Pays", href: "/pays" },
-    { name: "Destinations", href: "/destinations" },
-    // 3. Module Bible mobile : plans de lecture + verset du jour
-    { name: "Plans", href: "/reading-plans" },
-    { name: "Verset du jour", href: "/daily-verse" },
-    { name: "Communication", href: "/communication" },
-    // 4. Configuration (modal de MAJ mobile)
-    { name: "Version App", href: "/app-version" },
+    {
+        name: "Membres",
+        items: [
+            { name: "Utilisateurs", href: "/users" },
+            { name: "Cellules", href: "/cellules" },
+            { name: "Statistiques", href: "/statistiques" },
+        ],
+    },
+    {
+        name: "Contenus",
+        items: [
+            { name: "Activités", href: "/activites" },
+            { name: "Catégories", href: "/categorie" },
+            { name: "Pays", href: "/pays" },
+            { name: "Destinations", href: "/destinations" },
+        ],
+    },
+    {
+        name: "Module Bible",
+        items: [
+            { name: "Plans", href: "/reading-plans" },
+            { name: "Verset du jour", href: "/daily-verse" },
+            { name: "Communication", href: "/communication" },
+        ],
+    },
+    {
+        name: "Configuration",
+        items: [{ name: "Version App", href: "/app-version" }],
+    },
 ];
 
-const userNavigation = [{ name: "Deconexion", href: "#" }];
+const userNavigation = [{ name: "Déconnexion", href: "#" }];
+
+// Initiales de l'utilisateur connecté, à la place d'une photo.
+function initiales(user) {
+    const i = `${user?.prenom?.[0] ?? ""}${user?.nom?.[0] ?? ""}`.toUpperCase();
+    return i || "?";
+}
+
+function Avatar({ user, className = "size-8 text-xs" }) {
+    return (
+        <span
+            aria-hidden="true"
+            className={`inline-flex items-center justify-center rounded-full bg-[#0955FF] font-semibold text-white ${className}`}
+        >
+            {initiales(user)}
+        </span>
+    );
+}
+
+// Anneau de focus clavier sur fond sombre.
+const FOCUS_SOMBRE =
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800";
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
@@ -49,15 +80,16 @@ function Header() {
     const location = useLocation();
     const { user, logout } = useAuth();
 
-    // Fonction pour vérifier si un lien est actif
+    // Lien actif : la page courante est le lien ou une de ses sous-pages.
     const isActivePath = (href) => {
-        // Si c'est la page d'accueil, vérifier exactement
         if (href === "/") {
             return location.pathname === "/";
         }
-        // Pour les autres pages, vérifier si le chemin commence par le href
         return location.pathname.startsWith(href);
     };
+
+    const isActiveGroup = (group) =>
+        group.items.some((item) => isActivePath(item.href));
 
     const handleLogout = () => {
         logout();
@@ -72,15 +104,17 @@ function Header() {
                         <div className="shrink-0">
                             <Link
                                 to="/"
-                                className="flex items-center space-x-2 text-white hover:text-gray-300 transition-colors"
+                                className={`flex items-center space-x-2 rounded-md text-white hover:text-gray-300 transition-colors ${FOCUS_SOMBRE}`}
                             >
-                                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">
-                                        JH
-                                    </span>
-                                </div>
+                                <span className="flex size-9 items-center justify-center rounded-lg bg-white p-0.5">
+                                    <img
+                                        src="/msa-logo.png"
+                                        alt=""
+                                        className="size-full object-contain"
+                                    />
+                                </span>
                                 <span className="font-semibold text-lg hidden sm:block">
-                                    JobHubs
+                                    MSA Back-office
                                 </span>
                                 {ENV_LABEL && (
                                     <span
@@ -93,28 +127,67 @@ function Header() {
                             </Link>
                         </div>
                         <div className="hidden md:block">
-                            <div className="ml-10 flex items-baseline space-x-4">
-                                {navigation.map((item) => {
-                                    const isActive = isActivePath(item.href);
+                            <div className="ml-8 flex items-center gap-1">
+                                {navigation.map((group) => {
+                                    const groupActive = isActiveGroup(group);
                                     return (
-                                        <Link
-                                            key={item.name}
-                                            to={item.href}
-                                            aria-current={
-                                                isActive ? "page" : undefined
-                                            }
-                                            className={classNames(
-                                                isActive
-                                                    ? "bg-gray-900 text-white border-b-2 border-indigo-500"
-                                                    : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                                                "rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 hover:scale-105"
-                                            )}
+                                        <Menu
+                                            as="div"
+                                            key={group.name}
+                                            className="relative"
                                         >
-                                            {item.name}
-                                            {isActive && (
-                                                <span className="ml-2 inline-block w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
-                                            )}
-                                        </Link>
+                                            <MenuButton
+                                                className={classNames(
+                                                    groupActive
+                                                        ? "bg-gray-900 text-white"
+                                                        : "text-gray-300 hover:bg-gray-700 hover:text-white data-open:bg-gray-700 data-open:text-white",
+                                                    "group inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
+                                                    FOCUS_SOMBRE
+                                                )}
+                                            >
+                                                {group.name}
+                                                <ChevronDownIcon
+                                                    aria-hidden="true"
+                                                    className="size-4 opacity-70 transition-transform duration-150 group-data-open:rotate-180"
+                                                />
+                                                {groupActive && (
+                                                    <span className="sr-only">
+                                                        {" "}
+                                                        (section courante)
+                                                    </span>
+                                                )}
+                                            </MenuButton>
+
+                                            <MenuItems
+                                                transition
+                                                className="absolute left-0 z-20 mt-2 w-52 origin-top-left rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-150 data-enter:ease-out data-leave:duration-100 data-leave:ease-in"
+                                            >
+                                                {group.items.map((item) => {
+                                                    const isActive =
+                                                        isActivePath(item.href);
+                                                    return (
+                                                        <MenuItem key={item.href}>
+                                                            <Link
+                                                                to={item.href}
+                                                                aria-current={
+                                                                    isActive
+                                                                        ? "page"
+                                                                        : undefined
+                                                                }
+                                                                className={classNames(
+                                                                    isActive
+                                                                        ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700 data-focus:bg-indigo-100"
+                                                                        : "border-transparent text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900",
+                                                                    "block border-l-2 px-4 py-2 text-sm data-focus:outline-none"
+                                                                )}
+                                                            >
+                                                                {item.name}
+                                                            </Link>
+                                                        </MenuItem>
+                                                    );
+                                                })}
+                                            </MenuItems>
+                                        </Menu>
                                     );
                                 })}
                             </div>
@@ -122,49 +195,22 @@ function Header() {
                     </div>
                     <div className="hidden md:block">
                         <div className="ml-4 flex items-center md:ml-6">
-                            {/* Notifications */}
-                            <button
-                                type="button"
-                                className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden transition-colors duration-200 hover:scale-110"
-                            >
-                                <span className="absolute -inset-1.5" />
-                                <span className="sr-only">
-                                    Voir les notifications
-                                </span>
-                                <BellIcon
-                                    aria-hidden="true"
-                                    className="size-6"
-                                />
-                                {/* Badge de notification */}
-                                <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-800">
-                                    <span className="sr-only">
-                                        Nouvelles notifications
-                                    </span>
-                                </span>
-                            </button>
 
                             {/* Profile dropdown */}
-                            <Menu as="div" className="relative ml-3">
-                                <MenuButton className="relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 transition-all duration-200 hover:scale-110">
+                            <Menu as="div" className="relative">
+                                <MenuButton
+                                    className={`relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm ${FOCUS_SOMBRE}`}
+                                >
                                     <span className="absolute -inset-1.5" />
                                     <span className="sr-only">
                                         Ouvrir le menu utilisateur
                                     </span>
-                                    <img
-                                        alt=""
-                                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                        className="size-8 rounded-full ring-2 ring-transparent hover:ring-indigo-500 transition-all duration-200"
-                                    />
-                                    <div className="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-gray-800">
-                                        <span className="sr-only">
-                                            En ligne
-                                        </span>
-                                    </div>
+                                    <Avatar user={user} />
                                 </MenuButton>
 
                                 <MenuItems
                                     transition
-                                    className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-xl bg-white py-2 shadow-xl ring-1 ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
+                                    className="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-xl bg-white py-2 shadow-xl ring-1 ring-black/5 transition focus:outline-none data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
                                 >
                                     {/* User Info */}
                                     <div className="px-4 py-3 border-b border-gray-100">
@@ -204,83 +250,79 @@ function Header() {
                     </div>
                     <div className="-mr-2 flex md:hidden">
                         {/* Mobile menu button */}
-                        <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden transition-all duration-200">
+                        <DisclosureButton
+                            className={`group relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors duration-150 ${FOCUS_SOMBRE}`}
+                        >
                             <span className="absolute -inset-0.5" />
                             <span className="sr-only">
                                 Ouvrir le menu principal
                             </span>
                             <Bars3Icon
                                 aria-hidden="true"
-                                className="block size-6 group-data-open:hidden transition-transform duration-200"
+                                className="block size-6 group-data-open:hidden"
                             />
                             <XMarkIcon
                                 aria-hidden="true"
-                                className="hidden size-6 group-data-open:block transition-transform duration-200"
+                                className="hidden size-6 group-data-open:block"
                             />
                         </DisclosureButton>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile menu */}
+            {/* Mobile menu : mêmes groupes, en sections titrées */}
             <DisclosurePanel className="md:hidden bg-gray-900 border-t border-gray-700">
-                <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
-                    {navigation.map((item) => {
-                        const isActive = isActivePath(item.href);
-                        return (
-                            <DisclosureButton
-                                key={item.name}
-                                as={Link}
-                                to={item.href}
-                                aria-current={isActive ? "page" : undefined}
-                                className={classNames(
-                                    isActive
-                                        ? "bg-gray-800 text-white border-l-4 border-indigo-500"
-                                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                                    "block rounded-md px-3 py-2 text-base font-medium transition-all duration-200"
-                                )}
+                <div className="space-y-4 px-2 pt-3 pb-4 sm:px-3">
+                    {navigation.map((group, index) => (
+                        <section
+                            key={group.name}
+                            aria-labelledby={`nav-mobile-${index}`}
+                        >
+                            <h3
+                                id={`nav-mobile-${index}`}
+                                className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500"
                             >
-                                <div className="flex items-center justify-between">
-                                    {item.name}
-                                    {isActive && (
-                                        <span className="inline-block w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
-                                    )}
-                                </div>
-                            </DisclosureButton>
-                        );
-                    })}
+                                {group.name}
+                            </h3>
+                            <div className="space-y-1">
+                                {group.items.map((item) => {
+                                    const isActive = isActivePath(item.href);
+                                    return (
+                                        <DisclosureButton
+                                            key={item.href}
+                                            as={Link}
+                                            to={item.href}
+                                            aria-current={
+                                                isActive ? "page" : undefined
+                                            }
+                                            className={classNames(
+                                                isActive
+                                                    ? "border-indigo-500 bg-gray-800 text-white"
+                                                    : "border-transparent text-gray-300 hover:bg-gray-700 hover:text-white",
+                                                "block rounded-md border-l-4 px-3 py-2 text-base font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                            )}
+                                        >
+                                            {item.name}
+                                        </DisclosureButton>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))}
                 </div>
 
                 {/* Mobile user section */}
                 <div className="border-t border-gray-700 pt-4 pb-3">
                     <div className="flex items-center px-5">
-                        <div className="shrink-0 relative">
-                            <img
-                                alt=""
-                                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                className="size-10 rounded-full ring-2 ring-indigo-500"
-                            />
-                            <div className="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-gray-900"></div>
-                        </div>
+                        <Avatar user={user} className="size-10 text-sm" />
                         <div className="ml-3">
                             <div className="text-base/5 font-medium text-white">
-                                {user?.name}
+                                {user?.nom} {user?.prenom}
                             </div>
                             <div className="text-sm font-medium text-gray-400">
                                 {user?.email}
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            className="relative ml-auto shrink-0 rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden transition-all duration-200"
-                        >
-                            <span className="absolute -inset-1.5" />
-                            <span className="sr-only">
-                                Voir les notifications
-                            </span>
-                            <BellIcon aria-hidden="true" className="size-6" />
-                            <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-800"></span>
-                        </button>
                     </div>
                     <div className="mt-3 space-y-1 px-2">
                         {userNavigation.map((item) => (
@@ -291,7 +333,7 @@ function Header() {
                                 onClick={
                                     item.href === "#" ? handleLogout : undefined
                                 }
-                                className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition-colors duration-200"
+                                className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                             >
                                 {item.name}
                             </DisclosureButton>

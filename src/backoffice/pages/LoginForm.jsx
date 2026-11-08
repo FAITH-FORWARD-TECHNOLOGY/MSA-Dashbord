@@ -6,7 +6,6 @@ import {
     Lock,
     Mail,
     Loader2,
-    Shield,
     AlertCircle,
     CheckCircle,
 } from "lucide-react";
@@ -106,11 +105,15 @@ const LoginForm = ({ onLogin }) => {
             <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-md p-8 border border-white/20">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                        <Shield className="w-8 h-8 text-white" />
+                    <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg p-1">
+                        <img
+                            src="/msa-logo.png"
+                            alt=""
+                            className="w-full h-full object-contain"
+                        />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        JobHubs Admin
+                        MSA Back-office
                     </h1>
                     {ENV_LABEL && (
                         <span

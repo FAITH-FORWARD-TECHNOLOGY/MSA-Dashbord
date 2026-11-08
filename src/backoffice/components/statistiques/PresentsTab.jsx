@@ -1,32 +1,60 @@
 import React from "react";
 import { EtatVide } from "./StatsUi";
-import { dateLongue } from "./format";
+import { dateLongue, pluriel } from "./format";
 
 // Onglet Présents : par cellule, puis par jour, la liste des présents.
+
+// Membres en bleu, invités en ambre (mêmes teintes que la courbe Évolution).
+const TEINTES = {
+    membre: "bg-blue-50 text-blue-800",
+    invite: "bg-amber-50 text-amber-800",
+};
+
+const PASTILLE = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+
+// "Martin", "Jean" -> "JM"
+const initiales = (prenom, nom) =>
+    `${(prenom ?? "").trim().charAt(0)}${(nom ?? "").trim().charAt(0)}`.toUpperCase() || "?";
+
+function Avatar({ personne }) {
+    return (
+        <span
+            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${personne.invite ? TEINTES.invite : TEINTES.membre}`}
+            aria-hidden="true"
+        >
+            {initiales(personne.prenom, personne.nom)}
+        </span>
+    );
+}
 
 function Jour({ jour }) {
     const presents = jour.presents ?? [];
     const invites = presents.filter((p) => p.invite).length;
     return (
         <div className="border-t border-gray-100 pt-3">
-            <h4 className="text-sm font-medium text-gray-800 first-letter:uppercase">
-                {dateLongue(jour.date)}
-                <span className="ml-2 font-normal text-gray-500">
-                    {presents.length} présent(s)
-                    {invites > 0 && ` dont ${invites} invité(s)`}
+            <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-sm font-medium text-gray-800 first-letter:uppercase">
+                    {dateLongue(jour.date)}
+                </h4>
+                <span className={`${PASTILLE} ${TEINTES.membre}`}>
+                    {pluriel(presents.length, "présent")}
                 </span>
-            </h4>
-            <ul className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                {invites > 0 && (
+                    <span className={`${PASTILLE} ${TEINTES.invite}`}>
+                        {pluriel(invites, "invité")}
+                    </span>
+                )}
+            </div>
+            <ul className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
                 {presents.map((p) => (
                     <li key={p.id} className="flex items-center gap-2 text-sm text-gray-700">
-                        <span>
+                        <Avatar personne={p} />
+                        <span className="min-w-0 truncate">
                             <span className="font-medium uppercase">{p.nom}</span>{" "}
                             {p.prenom}
                         </span>
                         {p.invite && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                Invité
-                            </span>
+                            <span className={`${PASTILLE} ${TEINTES.invite}`}>Invité</span>
                         )}
                     </li>
                 ))}
@@ -59,7 +87,7 @@ export default function PresentsTab({ data }) {
                     <h3 id={`presents-${c.id}`} className="font-semibold text-gray-800 mb-3">
                         {c.name}
                         <span className="ml-2 text-sm font-normal text-gray-500">
-                            {c.jours.length} jour(s) avec présences
+                            {pluriel(c.jours.length, "jour avec présences", "jours avec présences")}
                         </span>
                     </h3>
                     <div className="space-y-3">

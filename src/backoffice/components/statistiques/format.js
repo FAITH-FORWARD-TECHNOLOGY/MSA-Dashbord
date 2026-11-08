@@ -74,3 +74,36 @@ export function nomFichierExport(volet, { du, au }, nomCellule, format) {
     const cellule = nomCellule ? `_${slug(nomCellule)}` : "";
     return `statistiques_${volet}_${du}_au_${au}${cellule}.${format}`;
 }
+
+const fmtMois = new Intl.DateTimeFormat("fr-FR", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+});
+
+// "2026-10-08" -> "oct. 2026"
+export const moisAnnee = (ymd) => fmtMois.format(lireYmd(ymd));
+
+// "2026-10-08" -> "8"
+export const jourDuMois = (ymd) => String(Number(ymd.split("-")[2]));
+
+// Dates triées -> [{ cle: "2026-10", dates: [...] }] par mois consécutif.
+export function grouperParMois(dates) {
+    const groupes = [];
+    for (const date of dates) {
+        const cle = date.slice(0, 7);
+        const dernier = groupes[groupes.length - 1];
+        if (dernier?.cle === cle) dernier.dates.push(date);
+        else groupes.push({ cle, dates: [date] });
+    }
+    return groupes;
+}
+
+// (2, "cellule") -> "2 cellules" ; (1, "jour de réunion", "jours de réunion") -> "1 jour de réunion"
+export const pluriel = (n, singulier, forme = `${singulier}s`) =>
+    `${n} ${n > 1 ? forme : singulier}`;
+
+const fmtDecimal = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+
+// 4.25 -> "4,3" ; null -> "—"
+export const decimalFr = (x) => (x === null || x === undefined ? "—" : fmtDecimal.format(x));
