@@ -12,6 +12,7 @@ import {
     ChevronDownIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ENV_LABEL, ENV_BADGE_CLASS } from "../config/environment";
@@ -76,6 +77,201 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(" ");
 }
 
+// Un seul groupe ouvert à la fois : l'ouverture d'un groupe ferme les autres.
+const NAV_OPEN_EVENT = "nav-group-open";
+
+// Groupe de navigation : s'ouvre au survol de la souris, au toucher et au clavier.
+function NavGroup({ group, active, isActivePath }) {
+    const [open, setOpen] = useState(false);
+    const closeTimer = useRef(null);
+    const rootRef = useRef(null);
+    const buttonRef = useRef(null);
+    const lastPointer = useRef("");
+    const panelRef = useRef(null);
+    const focusOnOpen = useRef(null);
+    const panelId = useId();
+    const { pathname } = useLocation();
+
+    // Fermé après chaque navigation.
+    useEffect(() => setOpen(false), [pathname]);
+    useEffect(() => () => clearTimeout(closeTimer.current), []);
+    useEffect(() => {
+        const onOtherOpen = (e) => {
+            if (e.detail !== panelId) {
+                clearTimeout(closeTimer.current);
+                if (panelRef.current?.contains(document.activeElement)) {
+                    buttonRef.current?.focus();
+                }
+                setOpen(false);
+            }
+        };
+        window.addEventListener(NAV_OPEN_EVENT, onOtherOpen);
+        return () => window.removeEventListener(NAV_OPEN_EVENT, onOtherOpen);
+    }, [panelId]);
+    useEffect(() => {
+        if (open) {
+            window.dispatchEvent(
+                new CustomEvent(NAV_OPEN_EVENT, { detail: panelId })
+            );
+        }
+    }, [open, panelId]);
+    // Ouvert : un toucher/clic hors du groupe ou Échap n'importe où ferme.
+    useEffect(() => {
+        if (!open) return undefined;
+        const onDown = (e) => {
+            if (!rootRef.current?.contains(e.target)) setOpen(false);
+        };
+        const onEscape = (e) => e.key === "Escape" && setOpen(false);
+        document.addEventListener("pointerdown", onDown);
+        document.addEventListener("keydown", onEscape);
+        return () => {
+            document.removeEventListener("pointerdown", onDown);
+            document.removeEventListener("keydown", onEscape);
+        };
+    }, [open]);
+    // Focus demandé au clavier, appliqué une fois le panneau affiché.
+    useEffect(() => {
+        if (open && focusOnOpen.current !== null) {
+            focusLink(focusOnOpen.current);
+            focusOnOpen.current = null;
+        }
+    });
+
+    const show = () => {
+        clearTimeout(closeTimer.current);
+        setOpen(true);
+    };
+    // Court délai pour tolérer un passage hors de la zone.
+    const hideSoon = () => {
+        clearTimeout(closeTimer.current);
+        closeTimer.current = setTimeout(() => {
+            // Ne ferme pas sous le focus clavier d'un lien.
+            if (!panelRef.current?.contains(document.activeElement)) {
+                setOpen(false);
+            }
+        }, 150);
+    };
+
+    const links = () => [...(panelRef.current?.querySelectorAll("a") ?? [])];
+    const focusLink = (index) => {
+        const all = links();
+        all[(index + all.length) % all.length]?.focus();
+    };
+
+    const onKeyDown = (e) => {
+        const all = links();
+        const current = all.indexOf(document.activeElement);
+        if (e.key === "Escape" && open) {
+            e.preventDefault();
+            setOpen(false);
+            buttonRef.current?.focus();
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (open) {
+                focusLink(current + 1);
+            } else {
+                focusOnOpen.current = 0;
+                show();
+            }
+        } else if (e.key === "ArrowUp" && current !== -1) {
+            e.preventDefault();
+            focusLink(current - 1);
+        }
+    };
+
+    return (
+        <div
+            ref={rootRef}
+            className="relative"
+            // Souris uniquement : au toucher, c'est le tap qui ouvre.
+            onPointerEnter={(e) => e.pointerType === "mouse" && show()}
+            onPointerLeave={(e) => e.pointerType === "mouse" && hideSoon()}
+            onKeyDown={onKeyDown}
+            // Sortie au clavier (Tab) ; les clics extérieurs sont gérés à part.
+            onBlur={(e) => {
+                if (
+                    e.relatedTarget &&
+                    !e.currentTarget.contains(e.relatedTarget)
+                ) {
+                    setOpen(false);
+                }
+            }}
+        >
+            <button
+                ref={buttonRef}
+                type="button"
+                aria-expanded={open}
+                aria-controls={panelId}
+                onPointerDown={(e) => {
+                    lastPointer.current = e.pointerType;
+                }}
+                // La souris a déjà ouvert au survol : son clic ne referme pas.
+                onClick={(e) => {
+                    clearTimeout(closeTimer.current);
+                    const souris =
+                        e.detail > 0 && lastPointer.current === "mouse";
+                    lastPointer.current = "";
+                    setOpen((o) => (souris ? true : !o));
+                }}
+                className={classNames(
+                    active
+                        ? "bg-gray-900 text-white"
+                        : open
+                          ? "bg-gray-700 text-white"
+                          : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                    "inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
+                    FOCUS_SOMBRE
+                )}
+            >
+                {group.name}
+                <ChevronDownIcon
+                    aria-hidden="true"
+                    className={classNames(
+                        open ? "rotate-180" : "",
+                        "size-4 opacity-70 transition-transform duration-150"
+                    )}
+                />
+                {active && <span className="sr-only"> (section courante)</span>}
+            </button>
+
+            {/* pt-2 plutôt que mt-2 : pas de trou entre bouton et panneau. */}
+            <div
+                id={panelId}
+                ref={panelRef}
+                className={classNames(
+                    open
+                        ? "visible opacity-100 translate-y-0"
+                        : "invisible opacity-0 -translate-y-1 pointer-events-none",
+                    "absolute left-0 top-full z-20 pt-2 transition-[opacity,translate] duration-150 ease-out"
+                )}
+            >
+                <ul className="w-52 rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5">
+                    {group.items.map((item) => {
+                        const isActive = isActivePath(item.href);
+                        return (
+                            <li key={item.href}>
+                                <Link
+                                    to={item.href}
+                                    onClick={() => setOpen(false)}
+                                    aria-current={isActive ? "page" : undefined}
+                                    className={classNames(
+                                        isActive
+                                            ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700 hover:bg-indigo-100 focus-visible:bg-indigo-100"
+                                            : "border-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:bg-gray-100 focus-visible:text-gray-900",
+                                        "block border-l-2 px-4 py-2 text-sm focus:outline-none"
+                                    )}
+                                >
+                                    {item.name}
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+        </div>
+    );
+}
+
 function Header() {
     const location = useLocation();
     const { user, logout } = useAuth();
@@ -131,63 +327,12 @@ function Header() {
                                 {navigation.map((group) => {
                                     const groupActive = isActiveGroup(group);
                                     return (
-                                        <Menu
-                                            as="div"
+                                        <NavGroup
                                             key={group.name}
-                                            className="relative"
-                                        >
-                                            <MenuButton
-                                                className={classNames(
-                                                    groupActive
-                                                        ? "bg-gray-900 text-white"
-                                                        : "text-gray-300 hover:bg-gray-700 hover:text-white data-open:bg-gray-700 data-open:text-white",
-                                                    "group inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
-                                                    FOCUS_SOMBRE
-                                                )}
-                                            >
-                                                {group.name}
-                                                <ChevronDownIcon
-                                                    aria-hidden="true"
-                                                    className="size-4 opacity-70 transition-transform duration-150 group-data-open:rotate-180"
-                                                />
-                                                {groupActive && (
-                                                    <span className="sr-only">
-                                                        {" "}
-                                                        (section courante)
-                                                    </span>
-                                                )}
-                                            </MenuButton>
-
-                                            <MenuItems
-                                                transition
-                                                className="absolute left-0 z-20 mt-2 w-52 origin-top-left rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-150 data-enter:ease-out data-leave:duration-100 data-leave:ease-in"
-                                            >
-                                                {group.items.map((item) => {
-                                                    const isActive =
-                                                        isActivePath(item.href);
-                                                    return (
-                                                        <MenuItem key={item.href}>
-                                                            <Link
-                                                                to={item.href}
-                                                                aria-current={
-                                                                    isActive
-                                                                        ? "page"
-                                                                        : undefined
-                                                                }
-                                                                className={classNames(
-                                                                    isActive
-                                                                        ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700 data-focus:bg-indigo-100"
-                                                                        : "border-transparent text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900",
-                                                                    "block border-l-2 px-4 py-2 text-sm data-focus:outline-none"
-                                                                )}
-                                                            >
-                                                                {item.name}
-                                                            </Link>
-                                                        </MenuItem>
-                                                    );
-                                                })}
-                                            </MenuItems>
-                                        </Menu>
+                                            group={group}
+                                            active={groupActive}
+                                            isActivePath={isActivePath}
+                                        />
                                     );
                                 })}
                             </div>
