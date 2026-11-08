@@ -9,7 +9,6 @@ import {
 } from "@headlessui/react";
 import {
     Bars3Icon,
-    BellIcon,
     ChevronDownIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -50,10 +49,24 @@ const navigation = [
     },
 ];
 
-const userNavigation = [{ name: "Deconexion", href: "#" }];
+const userNavigation = [{ name: "Déconnexion", href: "#" }];
 
-const AVATAR =
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+// Initiales de l'utilisateur connecté, à la place d'une photo.
+function initiales(user) {
+    const i = `${user?.prenom?.[0] ?? ""}${user?.nom?.[0] ?? ""}`.toUpperCase();
+    return i || "?";
+}
+
+function Avatar({ user, className = "size-8 text-xs" }) {
+    return (
+        <span
+            aria-hidden="true"
+            className={`inline-flex items-center justify-center rounded-full bg-[#0955FF] font-semibold text-white ${className}`}
+        >
+            {initiales(user)}
+        </span>
+    );
+}
 
 // Anneau de focus clavier sur fond sombre.
 const FOCUS_SOMBRE =
@@ -93,13 +106,15 @@ function Header() {
                                 to="/"
                                 className={`flex items-center space-x-2 rounded-md text-white hover:text-gray-300 transition-colors ${FOCUS_SOMBRE}`}
                             >
-                                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">
-                                        JH
-                                    </span>
-                                </div>
+                                <span className="flex size-9 items-center justify-center rounded-lg bg-white p-0.5">
+                                    <img
+                                        src="/msa-logo.png"
+                                        alt=""
+                                        className="size-full object-contain"
+                                    />
+                                </span>
                                 <span className="font-semibold text-lg hidden sm:block">
-                                    JobHubs
+                                    MSA Back-office
                                 </span>
                                 {ENV_LABEL && (
                                     <span
@@ -180,29 +195,9 @@ function Header() {
                     </div>
                     <div className="hidden md:block">
                         <div className="ml-4 flex items-center md:ml-6">
-                            {/* Notifications */}
-                            <button
-                                type="button"
-                                className={`relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white transition-colors duration-150 ${FOCUS_SOMBRE}`}
-                            >
-                                <span className="absolute -inset-1.5" />
-                                <span className="sr-only">
-                                    Voir les notifications
-                                </span>
-                                <BellIcon
-                                    aria-hidden="true"
-                                    className="size-6"
-                                />
-                                {/* Badge de notification */}
-                                <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-800">
-                                    <span className="sr-only">
-                                        Nouvelles notifications
-                                    </span>
-                                </span>
-                            </button>
 
                             {/* Profile dropdown */}
-                            <Menu as="div" className="relative ml-3">
+                            <Menu as="div" className="relative">
                                 <MenuButton
                                     className={`relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm ${FOCUS_SOMBRE}`}
                                 >
@@ -210,16 +205,7 @@ function Header() {
                                     <span className="sr-only">
                                         Ouvrir le menu utilisateur
                                     </span>
-                                    <img
-                                        alt=""
-                                        src={AVATAR}
-                                        className="size-8 rounded-full ring-2 ring-transparent hover:ring-indigo-500 transition-shadow duration-150"
-                                    />
-                                    <div className="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-gray-800">
-                                        <span className="sr-only">
-                                            En ligne
-                                        </span>
-                                    </div>
+                                    <Avatar user={user} />
                                 </MenuButton>
 
                                 <MenuItems
@@ -328,14 +314,7 @@ function Header() {
                 {/* Mobile user section */}
                 <div className="border-t border-gray-700 pt-4 pb-3">
                     <div className="flex items-center px-5">
-                        <div className="shrink-0 relative">
-                            <img
-                                alt=""
-                                src={AVATAR}
-                                className="size-10 rounded-full ring-2 ring-indigo-500"
-                            />
-                            <div className="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-gray-900"></div>
-                        </div>
+                        <Avatar user={user} className="size-10 text-sm" />
                         <div className="ml-3">
                             <div className="text-base/5 font-medium text-white">
                                 {user?.nom} {user?.prenom}
@@ -344,17 +323,6 @@ function Header() {
                                 {user?.email}
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            className="relative ml-auto shrink-0 rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
-                        >
-                            <span className="absolute -inset-1.5" />
-                            <span className="sr-only">
-                                Voir les notifications
-                            </span>
-                            <BellIcon aria-hidden="true" className="size-6" />
-                            <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-800"></span>
-                        </button>
                     </div>
                     <div className="mt-3 space-y-1 px-2">
                         {userNavigation.map((item) => (
