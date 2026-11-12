@@ -1,10 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import {
+    ETAT_FILTERS,
+    ETAT_LABELS,
+    announcementEtat,
+    announcementTypeLabel,
+    countByEtat,
+    filterByEtat,
     formatAnnouncementDate,
+    formatWindowDate,
     isHttpUrl,
-    moveId,
+    moveWithin,
 } from "../utils/announcements";
+
+// Couleur du badge d'état (texte lisible sur fond clair).
+const ETAT_BADGES = {
+    ACTIVE: "bg-green-100 text-green-800",
+    PROGRAMMEE: "bg-blue-100 text-blue-800",
+    EXPIREE: "bg-amber-100 text-amber-900",
+    DESACTIVEE: "bg-gray-200 text-gray-700",
+};
 
 const arrowClass =
     "p-1 rounded text-gray-600 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-30 disabled:hover:text-gray-600";
@@ -15,6 +30,10 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
     const [moving, setMoving] = useState(false);
     const [orderError, setOrderError] = useState("");
     const [status, setStatus] = useState("");
+    const [filter, setFilter] = useState("TOUTES");
+    const counts = countByEtat(announcements);
+    const visible = filterByEtat(announcements, filter);
+    const currentFilter = ETAT_FILTERS.find((f) => f.key === filter);
     const focusAfterMove = useRef(null); // {id, direction}
     const busy = useRef(false); // verrou immédiat contre le double clic
 
@@ -32,12 +51,16 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
 
     const move = async (row, delta) => {
         if (busy.current) return;
-        const ids = moveId(
+        // Dans un onglet filtré, la ligne change de place avec sa voisine visible.
+        const visibleIds = visible.map((a) => a.id);
+        const ids = moveWithin(
             announcements.map((a) => a.id),
+            visibleIds,
             row.id,
             delta,
         );
         if (!ids) return;
+        const position = visibleIds.indexOf(row.id) + delta + 1;
         busy.current = true;
         setMoving(true);
         setOrderError("");
@@ -48,7 +71,7 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
             };
             await onReorder(ids);
             setStatus(
-                `« ${row.title} » déplacée en position ${ids.indexOf(row.id) + 1} sur ${ids.length}.`,
+                `« ${row.title} » déplacée en position ${position} sur ${visibleIds.length}.`,
             );
         } catch (err) {
             focusAfterMove.current = null;
@@ -74,10 +97,37 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
             <p className="sr-only" role="status" aria-live="polite">
                 {status}
             </p>
+            <div
+                role="group"
+                aria-label="Filtrer les annonces par état"
+                className="flex flex-wrap gap-2 mb-3"
+            >
+                {ETAT_FILTERS.map((f) => (
+                    <button
+                        key={f.key}
+                        type="button"
+                        aria-pressed={filter === f.key}
+                        onClick={() => setFilter(f.key)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-1 ${
+                            filter === f.key
+                                ? "bg-blue-600 border-blue-600 text-white"
+                                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                    >
+                        {f.label} ({counts[f.key]})
+                    </button>
+                ))}
+            </div>
+            {visible.length === 0 ? (
+                <p role="status" className="text-gray-500">
+                    {currentFilter?.empty}
+                </p>
+            ) : (
             <div className="overflow-x-auto bg-white rounded shadow">
                 <table className="min-w-full text-sm" aria-busy={moving}>
                     <caption className="sr-only">
-                        Annonces, dans l’ordre d’affichage de l’application
+                        Annonces ({currentFilter?.label.toLowerCase()}), dans l’ordre
+                        d’affichage de l’application
                     </caption>
                     <thead className="bg-gray-50 text-gray-600">
                         <tr>
@@ -85,16 +135,21 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                             <th scope="col" className="text-left p-3">Date</th>
                             <th scope="col" className="text-left p-3">Rubrique</th>
                             <th scope="col" className="text-left p-3">Lien</th>
-                            <th scope="col" className="text-left p-3">Active</th>
+                            <th scope="col" className="text-left p-3">État</th>
                             <th scope="col" className="text-left p-3">Ordre</th>
                             <th scope="col" className="text-right p-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {announcements.map((r, index) => (
+                        {visible.map((r, index) => {
+                            const etat = announcementEtat(r);
+                            return (
                             <tr key={r.id} className="border-t border-gray-100">
                                 <td className="p-3 font-medium text-gray-800">
                                     {r.title}
+                                    <span className="block text-xs font-normal text-gray-500">
+                                        {announcementTypeLabel(r.type)}
+                                    </span>
                                 </td>
                                 <td className="p-3 text-gray-600">
                                     {formatAnnouncementDate(r.publishedAt) || "—"}
@@ -122,7 +177,23 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                                         <span className="text-gray-600">—</span>
                                     )}
                                 </td>
-                                <td className="p-3">{r.isActive ? "Oui" : "Non"}</td>
+                                <td className="p-3">
+                                    <span
+                                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${ETAT_BADGES[etat]}`}
+                                    >
+                                        {ETAT_LABELS[etat]}
+                                    </span>
+                                    {r.startsAt && (
+                                        <span className="block mt-1 text-xs text-gray-500 whitespace-nowrap">
+                                            Début : {formatWindowDate(r.startsAt)}
+                                        </span>
+                                    )}
+                                    {r.endsAt && (
+                                        <span className="block mt-1 text-xs text-gray-500 whitespace-nowrap">
+                                            Fin : {formatWindowDate(r.endsAt)}
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="p-3 whitespace-nowrap">
                                     <span className="inline-block w-6 text-gray-600">
                                         {index + 1}
@@ -143,7 +214,7 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                                         id={`annonce-${r.id}-descendre`}
                                         className={arrowClass}
                                         onClick={() => move(r, 1)}
-                                        disabled={index === announcements.length - 1}
+                                        disabled={index === visible.length - 1}
                                         aria-label={`Descendre « ${r.title} »`}
                                         title="Descendre"
                                     >
@@ -171,10 +242,12 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
+            )}
         </>
     );
 }

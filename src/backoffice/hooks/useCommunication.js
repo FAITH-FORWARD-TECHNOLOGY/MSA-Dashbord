@@ -14,19 +14,43 @@ export function useCommunication() {
     const [error, setError] = useState('');
 
     // Les routes /communication/admin/* sont protégées par JwtAuthGuard.
-    const authHeaders = () => {
-        let token = '';
+    const authToken = () => {
         try {
             const stored = localStorage.getItem('jobhubs_auth');
-            if (stored) token = JSON.parse(stored)?.user?.token ?? '';
+            return stored ? (JSON.parse(stored)?.user?.token ?? '') : '';
         } catch {
-            token = '';
+            return '';
         }
+    };
+
+    const authHeaders = () => {
+        const token = authToken();
         return {
             accept: '*/*',
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
+    };
+
+    // Envoi d'une image d'annonce sur le backend MSA ; renvoie son URL.
+    // Pas de Content-Type : le navigateur pose la frontière multipart.
+    const uploadAnnouncementImage = async (file) => {
+        const body = new FormData();
+        body.append('file', file);
+        const token = authToken();
+        const response = await fetch(`${API_BASE_URL}/communication/admin/uploads`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body,
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.status === 413) {
+            throw new Error('Image trop lourde : 5 Mo maximum.');
+        }
+        if (!response.ok || !result.url) {
+            throw new Error(result.message || `Échec de l'envoi (erreur ${response.status})`);
+        }
+        return result.url;
     };
 
     const request = async (path, options = {}) => {
@@ -118,6 +142,7 @@ export function useCommunication() {
         updateAnnouncement: (id, p) => mutate(`/announcements/${id}`, 'PATCH', p),
         deleteAnnouncement: (id) => mutate(`/announcements/${id}`, 'DELETE'),
         reorderAnnouncements,
+        uploadAnnouncementImage,
         createRubrique: (p) => mutate('/rubriques', 'POST', p),
         updateRubrique: (id, p) => mutate(`/rubriques/${id}`, 'PATCH', p),
         deleteRubrique: (id) => mutate(`/rubriques/${id}`, 'DELETE'),

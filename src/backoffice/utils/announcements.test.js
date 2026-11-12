@@ -67,6 +67,11 @@ test("l'édition pré-remplit tous les champs", () => {
         programUrl: "https://exemple.org/p.pdf",
         rubriqueId: "2",
         isActive: false,
+        type: "TEXTE",
+        imageUrl: "",
+        videoUrl: "",
+        startsAt: "",
+        endsAt: "",
     });
 });
 
@@ -133,6 +138,11 @@ test("le corps envoyé contient tous les champs, null pour les champs vidés", (
             programUrl: "https://exemple.org/p.pdf",
             rubriqueId: 2,
             isActive: true,
+            type: "TEXTE",
+            imageUrl: null,
+            videoUrl: null,
+            startsAt: null,
+            endsAt: null,
         },
     );
     const vide = buildAnnouncementPayload({

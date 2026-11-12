@@ -1,20 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
+import AnnouncementImageField from "./AnnouncementImageField";
 import {
+    ANNOUNCEMENT_TYPES,
     DATE_LABEL_MAX,
     TITLE_MAX,
     announcementToForm,
+    browserTimeZoneLabel,
     buildAnnouncementPayload,
     validateAnnouncementForm,
 } from "../utils/announcements";
 
 // Formulaire d'annonce (création et édition), dans une fenêtre modale.
 // `announcement` = ligne à modifier, ou null pour une nouvelle annonce.
-function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
+// `onUpload(file)` envoie une image et renvoie son URL.
+function AnnouncementForm({ announcement, rubriques, onSubmit, onUpload, onCancel }) {
     const isEdit = Boolean(announcement);
     const [values, setValues] = useState(() => announcementToForm(announcement));
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const [uploading, setUploading] = useState(false);
+    const [timeZone] = useState(() => browserTimeZoneLabel());
     const dialogRef = useRef(null);
     const titleRef = useRef(null);
 
@@ -31,7 +37,8 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === "Escape" && !saving) {
+        // Pas de fermeture pendant un envoi d'image : il serait perdu.
+        if (e.key === "Escape" && !saving && !uploading) {
             e.stopPropagation();
             onCancel();
             return;
@@ -39,7 +46,7 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
         if (e.key !== "Tab") return;
         // Le focus reste dans la fenêtre.
         const focusable = dialogRef.current?.querySelectorAll(
-            "input, textarea, select, button:not([disabled]), a[href]",
+            "input:not([tabindex='-1']), textarea, select, button:not([disabled]), a[href]",
         );
         if (!focusable?.length) return;
         const first = focusable[0];
@@ -55,7 +62,7 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
 
     const submit = async (e) => {
         e.preventDefault();
-        if (saving) return;
+        if (saving || uploading) return;
         const found = validateAnnouncementForm(values);
         setErrors(found);
         const firstInvalid = Object.keys(found)[0];
@@ -161,6 +168,64 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
                     />
                 </div>
 
+                <fieldset className="mb-3">
+                    <legend className="text-sm text-gray-700">Type d’annonce</legend>
+                    <div className="mt-1 flex flex-wrap gap-4">
+                        {ANNOUNCEMENT_TYPES.map((t) => (
+                            <label key={t.value} className="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    name="annonce-type"
+                                    value={t.value}
+                                    checked={values.type === t.value}
+                                    onChange={() => set("type", t.value)}
+                                />
+                                <span className="text-sm text-gray-700">{t.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                </fieldset>
+
+                {values.type === "IMAGE" && (
+                    <div className="mb-3" role="group" aria-labelledby="annonce-imageUrl-label">
+                        <span id="annonce-imageUrl-label" className="text-sm text-gray-700">
+                            Image
+                        </span>
+                        <AnnouncementImageField
+                            value={values.imageUrl}
+                            onChange={(url) => set("imageUrl", url)}
+                            onUpload={onUpload}
+                            onBusyChange={setUploading}
+                            invalid={Boolean(errors.imageUrl)}
+                            describedBy={
+                                describe("imageUrl", true)["aria-describedby"]
+                            }
+                            disabled={saving}
+                        />
+                        {fieldError("imageUrl")}
+                        {hint("imageUrl", "JPEG, PNG ou WebP, 5 Mo maximum.")}
+                    </div>
+                )}
+
+                {values.type === "VIDEO" && (
+                    <div className="mb-3">
+                        <label htmlFor="annonce-videoUrl" className="text-sm text-gray-700">
+                            Lien YouTube de la vidéo
+                        </label>
+                        <input
+                            {...describe("videoUrl")}
+                            type="url"
+                            inputMode="url"
+                            required
+                            placeholder="https://youtu.be/…"
+                            className="mt-1 w-full border rounded p-2"
+                            value={values.videoUrl}
+                            onChange={(e) => set("videoUrl", e.target.value)}
+                        />
+                        {fieldError("videoUrl")}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="mb-3">
                         <label
@@ -247,6 +312,54 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
                     </select>
                 </div>
 
+                <fieldset
+                    className="mb-3 border border-gray-200 rounded p-3"
+                    aria-describedby="annonce-fenetre-aide"
+                >
+                    <legend className="text-sm text-gray-700 px-1">
+                        Diffusion (facultatif)
+                    </legend>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                htmlFor="annonce-startsAt"
+                                className="text-sm text-gray-700"
+                            >
+                                Début
+                            </label>
+                            <input
+                                {...describe("startsAt")}
+                                type="datetime-local"
+                                className="mt-1 w-full border rounded p-2"
+                                value={values.startsAt}
+                                onChange={(e) => set("startsAt", e.target.value)}
+                            />
+                            {fieldError("startsAt")}
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="annonce-endsAt"
+                                className="text-sm text-gray-700"
+                            >
+                                Fin
+                            </label>
+                            <input
+                                {...describe("endsAt")}
+                                type="datetime-local"
+                                className="mt-1 w-full border rounded p-2"
+                                value={values.endsAt}
+                                onChange={(e) => set("endsAt", e.target.value)}
+                            />
+                            {fieldError("endsAt")}
+                        </div>
+                    </div>
+                    <p id="annonce-fenetre-aide" className="mt-2 text-xs text-gray-500">
+                        Heure de votre ordinateur ({timeZone}). Sans début, l’annonce
+                        est visible tout de suite ; à la date de fin, elle est
+                        retirée automatiquement de l’application.
+                    </p>
+                </fieldset>
+
                 <label className="flex items-center gap-2 mb-5">
                     <input
                         type="checkbox"
@@ -263,14 +376,14 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onCancel }) {
                         type="button"
                         className="px-4 py-2 rounded bg-gray-200 text-gray-700 text-sm font-medium"
                         onClick={onCancel}
-                        disabled={saving}
+                        disabled={saving || uploading}
                     >
                         Annuler
                     </button>
                     <button
                         type="submit"
                         className="px-4 py-2 rounded bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
-                        disabled={saving}
+                        disabled={saving || uploading}
                     >
                         {saving ? "Enregistrement…" : "Enregistrer"}
                     </button>

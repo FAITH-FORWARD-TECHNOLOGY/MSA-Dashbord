@@ -71,6 +71,7 @@ const CommunicationPage = () => {
         updateAnnouncement,
         deleteAnnouncement,
         reorderAnnouncements,
+        uploadAnnouncementImage,
         createRubrique,
         updateRubrique,
         deleteRubrique,
@@ -406,6 +407,7 @@ const CommunicationPage = () => {
                     announcement={form.id ? form.data : null}
                     rubriques={rubriques}
                     onSubmit={submitAnnouncement}
+                    onUpload={uploadAnnouncementImage}
                     onCancel={() => setForm(null)}
                 />
             )}
