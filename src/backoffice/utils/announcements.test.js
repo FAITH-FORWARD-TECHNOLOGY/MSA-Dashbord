@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 import {
     announcementToForm,
     buildAnnouncementPayload,
-    doualaDateInput,
-    doualaNoonIso,
+    abidjanDateInput,
+    abidjanNoonIso,
     emptyAnnouncementForm,
     formatAnnouncementDate,
     isHttpUrl,
@@ -13,25 +13,25 @@ import {
     validateAnnouncementForm,
 } from "./announcements.js";
 
-test("la date saisie est stockée à midi, heure de Douala", () => {
-    assert.equal(doualaNoonIso("2026-11-16"), "2026-11-16T11:00:00.000Z");
-    assert.equal(doualaNoonIso(""), null);
-    assert.equal(doualaNoonIso("16/11/2026"), null);
-    assert.equal(doualaNoonIso("2026-02-31"), null);
+test("la date saisie est stockée à midi, heure d'Abidjan", () => {
+    assert.equal(abidjanNoonIso("2026-11-16"), "2026-11-16T12:00:00.000Z");
+    assert.equal(abidjanNoonIso(""), null);
+    assert.equal(abidjanNoonIso("16/11/2026"), null);
+    assert.equal(abidjanNoonIso("2026-02-31"), null);
 });
 
-test("le jour relu est celui de Douala, pas celui d'UTC", () => {
-    // 23h30 UTC le 31 août = 1er septembre à Douala.
-    assert.equal(doualaDateInput("2026-08-31T23:30:00.000Z"), "2026-09-01");
-    assert.equal(doualaDateInput("2026-11-16T11:00:00.000Z"), "2026-11-16");
-    assert.equal(doualaDateInput(null), "");
-    assert.equal(doualaDateInput("n'importe quoi"), "");
-    assert.equal(formatAnnouncementDate("2026-08-31T23:30:00.000Z"), "1 sept. 2026");
+test("le jour relu est celui d'Abidjan (UTC+0)", () => {
+    // Abidjan est à UTC+0 : 23h30 UTC le 31 août reste le 31 août.
+    assert.equal(abidjanDateInput("2026-08-31T23:30:00.000Z"), "2026-08-31");
+    assert.equal(abidjanDateInput("2026-11-16T12:00:00.000Z"), "2026-11-16");
+    assert.equal(abidjanDateInput(null), "");
+    assert.equal(abidjanDateInput("n'importe quoi"), "");
+    assert.equal(formatAnnouncementDate("2026-08-31T23:30:00.000Z"), "31 août 2026");
 });
 
 test("aller-retour : la date saisie est relue à l'identique", () => {
     for (const jour of ["2026-01-01", "2026-03-29", "2026-10-25", "2026-12-31"]) {
-        assert.equal(doualaDateInput(doualaNoonIso(jour)), jour);
+        assert.equal(abidjanDateInput(abidjanNoonIso(jour)), jour);
     }
 });
 
@@ -52,7 +52,7 @@ test("l'édition pré-remplit tous les champs", () => {
         id: 4,
         title: "Convention",
         description: "Trois jours.",
-        publishedAt: "2026-11-16T11:00:00.000Z",
+        publishedAt: "2026-11-16T12:00:00.000Z",
         dateLabel: "Dimanche 16 nov. à 9h",
         programUrl: "https://exemple.org/p.pdf",
         rubriqueId: 2,
@@ -81,16 +81,16 @@ test("une annonce incomplète (créée avant le correctif) reste éditable", () 
         rubriqueId: null,
         isActive: true,
     });
-    assert.equal(form.eventDate, "2026-11-02");
+    assert.equal(form.eventDate, "2026-11-01");
     assert.equal(form.rubriqueId, "");
     assert.equal(form.dateLabel, "");
     assert.equal(form.programUrl, "");
     assert.deepEqual(validateAnnouncementForm(form), {});
 });
 
-test("nouvelle annonce : date du jour à Douala, active, sans rubrique", () => {
+test("nouvelle annonce : date du jour à Abidjan, active, sans rubrique", () => {
     const form = emptyAnnouncementForm(new Date("2026-11-12T23:30:00.000Z"));
-    assert.equal(form.eventDate, "2026-11-13");
+    assert.equal(form.eventDate, "2026-11-12");
     assert.equal(form.rubriqueId, "");
     assert.equal(form.isActive, true);
 });
@@ -128,7 +128,7 @@ test("le corps envoyé contient tous les champs, null pour les champs vidés", (
         {
             title: "Convention",
             description: "Trois jours.\nVenez.",
-            publishedAt: "2026-11-16T11:00:00.000Z",
+            publishedAt: "2026-11-16T12:00:00.000Z",
             dateLabel: "Dimanche 16 nov. à 9h",
             programUrl: "https://exemple.org/p.pdf",
             rubriqueId: 2,

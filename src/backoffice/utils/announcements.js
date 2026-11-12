@@ -1,9 +1,9 @@
 // Logique pure des annonces (formulaire, dates, ordre) : sans React, testable seule.
 
 // Fuseau métier : le même que le backend.
-export const ANNOUNCEMENT_TIME_ZONE = "Africa/Douala";
-// Douala est à UTC+1 toute l'année (pas d'heure d'été).
-const DOUALA_OFFSET = "+01:00";
+export const ANNOUNCEMENT_TIME_ZONE = "Africa/Abidjan";
+// Abidjan est à UTC+0 toute l'année (pas d'heure d'été).
+const ABIDJAN_OFFSET = "+00:00";
 
 export const TITLE_MAX = 255;
 export const DATE_LABEL_MAX = 80;
@@ -11,15 +11,15 @@ export const DATE_LABEL_MAX = 80;
 export const emptyAnnouncementForm = (now = new Date()) => ({
     title: "",
     description: "",
-    eventDate: doualaDateInput(now),
+    eventDate: abidjanDateInput(now),
     dateLabel: "",
     programUrl: "",
     rubriqueId: "",
     isActive: true,
 });
 
-// ISO -> "AAAA-MM-JJ" (valeur d'un <input type="date">), jour vu de Douala.
-export function doualaDateInput(value) {
+// ISO -> "AAAA-MM-JJ" (valeur d'un <input type="date">), jour vu d'Abidjan.
+export function abidjanDateInput(value) {
     if (!value) return "";
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -33,13 +33,13 @@ export function doualaDateInput(value) {
     return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
-// "AAAA-MM-JJ" -> ISO à midi, heure de Douala : aucun fuseau ne change le jour.
-export function doualaNoonIso(dateInput) {
+// "AAAA-MM-JJ" -> ISO à midi, heure d'Abidjan : aucun fuseau ne change le jour.
+export function abidjanNoonIso(dateInput) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput ?? "")) return null;
-    const date = new Date(`${dateInput}T12:00:00${DOUALA_OFFSET}`);
+    const date = new Date(`${dateInput}T12:00:00${ABIDJAN_OFFSET}`);
     if (Number.isNaN(date.getTime())) return null;
     // Refuse les dates corrigées en silence (ex. 31 février).
-    return doualaDateInput(date) === dateInput ? date.toISOString() : null;
+    return abidjanDateInput(date) === dateInput ? date.toISOString() : null;
 }
 
 // Date lisible dans le tableau, ex. "16 nov. 2026".
@@ -74,7 +74,7 @@ export function announcementToForm(row, now = new Date()) {
     return {
         title: row.title ?? "",
         description: row.description ?? "",
-        eventDate: doualaDateInput(row.publishedAt) || doualaDateInput(now),
+        eventDate: abidjanDateInput(row.publishedAt) || abidjanDateInput(now),
         dateLabel: row.dateLabel ?? "",
         programUrl: row.programUrl ?? "",
         rubriqueId: row.rubriqueId == null ? "" : String(row.rubriqueId),
@@ -89,7 +89,7 @@ export function validateAnnouncementForm(values) {
     if (!title) errors.title = "Le titre est obligatoire.";
     else if (title.length > TITLE_MAX)
         errors.title = `Le titre dépasse ${TITLE_MAX} caractères.`;
-    if (!doualaNoonIso(values.eventDate))
+    if (!abidjanNoonIso(values.eventDate))
         errors.eventDate = "Indiquez la date de l’évènement.";
     if (values.dateLabel.trim().length > DATE_LABEL_MAX)
         errors.dateLabel = `Le libellé dépasse ${DATE_LABEL_MAX} caractères.`;
@@ -106,7 +106,7 @@ export function buildAnnouncementPayload(values) {
     return {
         title: values.title.trim(),
         description: values.description.trim(),
-        publishedAt: doualaNoonIso(values.eventDate),
+        publishedAt: abidjanNoonIso(values.eventDate),
         dateLabel: values.dateLabel.trim() || null,
         programUrl: values.programUrl.trim() || null,
         rubriqueId: values.rubriqueId ? Number(values.rubriqueId) : null,
