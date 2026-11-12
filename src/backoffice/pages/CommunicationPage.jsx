@@ -10,6 +10,7 @@ import {
 import { useCommunication } from "../hooks/useCommunication";
 import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementTable from "../components/AnnouncementTable";
+import { liveScheduleHint, liveScheduleLabels } from "../utils/lives";
 
 // Page "Communication" du back-office : médiathèque (vidéos) et directs.
 // Chaque contenu = un lien YouTube saisi ici ; l'app mobile ouvre ce lien.
@@ -51,6 +52,18 @@ const toLocalInput = (iso) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const toIso = (local) => (local ? new Date(local).toISOString() : null);
+
+// Liste des directs : heure de l'ordinateur, puis équivalent à Abidjan.
+const LiveSchedule = ({ iso }) => {
+    const labels = liveScheduleLabels(iso);
+    if (!labels) return "—";
+    return (
+        <>
+            <span className="block">{labels.local}</span>
+            <span className="block text-xs text-gray-500">soit {labels.abidjan}</span>
+        </>
+    );
+};
 
 const CommunicationPage = () => {
     const {
@@ -333,7 +346,7 @@ const CommunicationPage = () => {
                                     {tab === "videos"
                                         ? "Rubrique"
                                         : tab === "lives"
-                                          ? "Diffusion"
+                                          ? "Diffusion (heure de votre ordinateur)"
                                           : "Vidéos"}
                                 </th>
                                 <th className="text-left p-3">
@@ -358,9 +371,7 @@ const CommunicationPage = () => {
                                             : tab === "lives"
                                               ? r.isLive
                                                   ? "En direct"
-                                                  : r.scheduledAt
-                                                    ? new Date(r.scheduledAt).toLocaleString("fr-FR")
-                                                    : "—"
+                                                  : <LiveSchedule iso={r.scheduledAt} />
                                               : `${r._count?.videos ?? 0} vidéo(s)`}
                                     </td>
                                     <td className="p-3">
@@ -617,10 +628,18 @@ const CommunicationPage = () => {
                                         <input
                                             type="datetime-local"
                                             required
+                                            aria-describedby="direct-heure-aide"
                                             className="mt-1 w-full border rounded p-2"
                                             value={form.data.scheduledAt}
                                             onChange={(e) => set("scheduledAt", e.target.value)}
                                         />
+                                        <span
+                                            id="direct-heure-aide"
+                                            aria-live="polite"
+                                            className="mt-1 block text-xs text-gray-500"
+                                        >
+                                            {liveScheduleHint(form.data.scheduledAt)}
+                                        </span>
                                     </label>
                                 )}
                             </>

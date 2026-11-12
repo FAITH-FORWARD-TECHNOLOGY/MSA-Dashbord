@@ -245,7 +245,7 @@ function AnnouncementForm({ announcement, rubriques, onSubmit, onUpload, onCance
                         {fieldError("eventDate")}
                         {hint(
                             "eventDate",
-                            "Classe l’annonce par mois dans l’application.",
+                            "Date à Abidjan. Classe l’annonce par mois dans l’application.",
                         )}
                     </div>
                     <div className="mb-3">
