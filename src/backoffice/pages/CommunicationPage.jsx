@@ -12,6 +12,22 @@ import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementTable from "../components/AnnouncementTable";
 import { liveScheduleHint, liveScheduleLabels } from "../utils/lives";
 
+// Icônes connues de l'app (comm_models.dart, _iconFor) : garder les deux listes alignées.
+const RUBRIQUE_ICONES = [
+    ["church", "Église"],
+    ["music_note", "Musique / louange"],
+    ["groups", "Groupe"],
+    ["school", "Enseignement (école)"],
+    ["menu_book", "Livre / Bible"],
+    ["child_care", "Enfants"],
+    ["favorite", "Cœur"],
+    ["event", "Évènement"],
+    ["campaign", "Annonce"],
+    ["mic", "Micro / prédication"],
+    ["live_tv", "Direct"],
+    ["volunteer_activism", "Entraide"],
+];
+
 // Page "Communication" du back-office : médiathèque (vidéos) et directs.
 // Chaque contenu = un lien YouTube saisi ici ; l'app mobile ouvre ce lien.
 
@@ -468,14 +484,26 @@ const CommunicationPage = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <label className="block mb-3">
                                         <span className="text-sm text-gray-700">
-                                            Icône (nom Material)
+                                            Icône
                                         </span>
-                                        <input
-                                            placeholder="music_note"
-                                            className="mt-1 w-full border rounded p-2"
-                                            value={form.data.icon}
+                                        <select
+                                            className="mt-1 w-full border rounded p-2 bg-white"
+                                            value={form.data.icon ?? ""}
                                             onChange={(e) => set("icon", e.target.value)}
-                                        />
+                                        >
+                                            <option value="">Par défaut (lecture)</option>
+                                            {RUBRIQUE_ICONES.map(([valeur, libelle]) => (
+                                                <option key={valeur} value={valeur}>
+                                                    {libelle}
+                                                </option>
+                                            ))}
+                                            {form.data.icon &&
+                                                !RUBRIQUE_ICONES.some(([v]) => v === form.data.icon) && (
+                                                    <option value={form.data.icon}>
+                                                        {`${form.data.icon} (non affichée dans l'app)`}
+                                                    </option>
+                                                )}
+                                        </select>
                                     </label>
                                     <label className="block mb-3">
                                         <span className="text-sm text-gray-700">
