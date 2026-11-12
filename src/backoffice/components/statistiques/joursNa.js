@@ -32,6 +32,23 @@ export const trouverJourNa = (jours, date, celluleId) =>
             j.cellules?.some((c) => String(c.id) === String(celluleId))
     ) ?? null;
 
+// 403 en lecture sous sélection de cellules.
+export const CELLULE_REFUSEE =
+    "Une cellule sélectionnée n'est plus accessible. Actualisez la page pour mettre à jour la liste des cellules.";
+
+// Identifie une demande de jours NA (période et cellules).
+export const cleJoursNa = ({ du, au, celluleIds }) => `${du}|${au}|${celluleIds ?? ""}`;
+
+// Vue du hook : « chargement » tant que la réponse reçue n'est pas celle de la demande en cours.
+export function etatJoursNa(recu, cle, actif, enCours) {
+    const aJour = actif && recu.cle === cle;
+    return {
+        jours: aJour ? recu.jours : [],
+        error: aJour ? recu.erreur : "",
+        loading: actif && (enCours || !aJour),
+    };
+}
+
 // Erreurs du formulaire par champ (objet vide si valide).
 export function erreursJourNa({ date, motif, portee, choix }) {
     const e = {};

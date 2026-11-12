@@ -7,8 +7,14 @@ import {
     ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { telechargerExport } from "../hooks/useStatistiques";
+import { telechargerExport, useStatistiquesCellules } from "../hooks/useStatistiques";
 import { FOCUS } from "../components/statistiques/StatsUi";
+import CellulesMultiSelect from "../components/statistiques/CellulesMultiSelect";
+import {
+    libelleCellules,
+    parametreCelluleIds,
+    selectionValide,
+} from "../components/statistiques/cellulesFiltre";
 
 // Export brut (admin) : cellules, utilisateurs et présences avec leurs clés.
 
@@ -23,9 +29,9 @@ const PERIODES = [
 
 const ONGLETS = [
     ["Infos", "période, volumes et liaisons entre les onglets"],
-    ["Cellules", "toutes les cellules, avec responsable_user_id"],
-    ["Utilisateurs", "tous les comptes, avec cellule_id d'appartenance"],
-    ["Présences", "présences de la période, avec user_id et cellule_id"],
+    ["Cellules", "toutes les cellules, avec responsable_user_id (jamais filtré)"],
+    ["Utilisateurs", "tous les comptes, avec cellule_id d'appartenance (jamais filtré)"],
+    ["Présences", "présences de la période et des cellules choisies, avec user_id et cellule_id"],
     ["Présences détaillées", "les mêmes présences, liaisons déjà faites (noms, cellules, statut)"],
 ];
 
@@ -45,6 +51,9 @@ const frDate = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4
 export default function ExportDonneesPage() {
     const { user } = useAuth();
     const [dates, setDates] = useState(() => periode(6));
+    const cellulesApi = useStatistiquesCellules();
+    // Cellules cochées (identifiants) ; [] = toutes les cellules.
+    const [selection, setSelection] = useState([]);
     const [etat, setEtat] = useState({ statut: "repos", message: "" });
     const idDu = useId();
     const idAu = useId();
@@ -62,6 +71,8 @@ export default function ExportDonneesPage() {
     }
 
     const datesInvalides = !dates.du || !dates.au || dates.au < dates.du;
+    const cellulesChoisies = selectionValide(selection, cellulesApi.cellules);
+    const celluleIds = parametreCelluleIds(cellulesChoisies);
 
     const telecharger = async () => {
         if (datesInvalides || enCours) return;
@@ -69,13 +80,13 @@ export default function ExportDonneesPage() {
         try {
             await telechargerExport(
                 "/export-donnees",
-                { du: dates.du, au: dates.au },
+                { du: dates.du, au: dates.au, celluleIds },
                 undefined,
                 `export-donnees-msa_${dates.du}_${dates.au}.xlsx`
             );
             setEtat({
                 statut: "ok",
-                message: `Export du ${frDate(dates.du)} au ${frDate(dates.au)} téléchargé.`,
+                message: `Export du ${frDate(dates.du)} au ${frDate(dates.au)} téléchargé (présences : ${celluleIds ? libelleCellules(cellulesChoisies, cellulesApi.cellules) : "toutes les cellules"}).`,
             });
         } catch (e) {
             setEtat({ statut: "erreur", message: e.message || "Échec de l'export." });
@@ -90,7 +101,7 @@ export default function ExportDonneesPage() {
             </p>
 
             <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-labelledby="titre-periode">
-                <h2 id="titre-periode" className="text-sm font-semibold text-gray-900">Période des présences</h2>
+                <h2 id="titre-periode" className="text-sm font-semibold text-gray-900">Période et cellules des présences</h2>
                 <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Périodes rapides">
                     {PERIODES.map((p) => {
                         const actif = JSON.stringify(periode(p.mois)) === JSON.stringify(dates);
@@ -111,7 +122,7 @@ export default function ExportDonneesPage() {
                         );
                     })}
                 </div>
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div>
                         <label htmlFor={idDu} className="block text-sm text-gray-700 mb-1">Du</label>
                         <input
@@ -134,7 +145,22 @@ export default function ExportDonneesPage() {
                             onChange={(e) => setDates((d) => ({ ...d, au: e.target.value }))}
                         />
                     </div>
+                    <CellulesMultiSelect
+                        cellules={cellulesApi.cellules}
+                        selection={cellulesChoisies}
+                        onChange={setSelection}
+                        classeLibelle="block text-sm text-gray-700 mb-1"
+                        chargement={cellulesApi.loading}
+                        erreur={
+                            cellulesApi.error &&
+                            `${cellulesApi.error}. L'export portera sur toutes les cellules.`
+                        }
+                        onReessayer={cellulesApi.recharger}
+                    />
                 </div>
+                <p className="mt-3 text-xs text-gray-500">
+                    Le choix des cellules ne filtre que les présences (onglets Présences et Présences détaillées). Les onglets Cellules et Utilisateurs restent complets.
+                </p>
                 {datesInvalides && (
                     <p role="alert" className="mt-2 text-sm text-red-600">
                         Choisissez une date de début antérieure à la date de fin (un an maximum).

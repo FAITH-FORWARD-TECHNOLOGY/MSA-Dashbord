@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL, authHeaders, handleUnauthorized } from "../config/api";
 import { construireUrl, messageErreur } from "./useStatistiques";
-import { ErreurJoursNa } from "../components/statistiques/joursNa";
+import {
+    CELLULE_REFUSEE,
+    cleJoursNa,
+    ErreurJoursNa,
+    etatJoursNa,
+} from "../components/statistiques/joursNa";
 
 // Ré-export des utilitaires purs pour les consommateurs du hook.
 export { ErreurJoursNa, estConflitPresences, estDonneePerimee, trouverJourNa } from "../components/statistiques/joursNa";
@@ -31,43 +36,48 @@ async function ecrire(methode, chemin, corps) {
     throw new ErreurJoursNa(await messageErreur(res), { status: res.status });
 }
 
-// Jours NA de la période (périmètre de l'utilisateur) et leurs écritures.
-export function useJoursNa({ du, au }, actif) {
-    const [jours, setJours] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+// Réponse reçue : `cle` dit à quelle demande elle répond.
+const AUCUNE = { cle: "", jours: [], erreur: "" };
+
+// Jours NA de la période et leurs écritures ; celluleIds ("1,4,9") limite les groupes, "" = périmètre entier.
+export function useJoursNa({ du, au, celluleIds }, actif) {
+    const [recu, setRecu] = useState(AUCUNE);
+    const [enCours, setEnCours] = useState(false);
     const [essai, setEssai] = useState(0);
+    const cle = cleJoursNa({ du, au, celluleIds });
 
     useEffect(() => {
         if (!actif) return undefined;
         const ctrl = new AbortController();
         (async () => {
             try {
-                setLoading(true);
-                setError("");
-                const res = await fetch(construireUrl("/jours-na", { du, au }), {
+                setEnCours(true);
+                const res = await fetch(construireUrl("/jours-na", { du, au, celluleIds }), {
                     headers: authHeaders(),
                     signal: ctrl.signal,
                 });
                 if (handleUnauthorized(res)) return;
-                // 403 = aucune cellule accessible : aucun jour NA à gérer.
-                if (res.status === 403) {
-                    setJours([]);
-                    return;
-                }
-                if (!res.ok) throw new Error(await messageErreur(res));
-                const body = await res.json();
-                setJours(Array.isArray(body) ? body : []);
+                // 403 sous sélection : une cellule choisie n'est plus accessible.
+                if (res.status === 403 && celluleIds) throw new Error(CELLULE_REFUSEE);
+                // 403 sans sélection = aucune cellule accessible : aucun jour NA à gérer.
+                if (res.status !== 403 && !res.ok) throw new Error(await messageErreur(res));
+                const body = res.ok ? await res.json() : [];
+                if (ctrl.signal.aborted) return;
+                setRecu({ cle, jours: Array.isArray(body) ? body : [], erreur: "" });
             } catch (err) {
-                if (err.name === "AbortError") return;
-                setJours([]);
-                setError(err.message || "Échec du chargement des jours NA");
+                if (err.name === "AbortError" || ctrl.signal.aborted) return;
+                setRecu({ cle, jours: [], erreur: err.message || "Échec du chargement des jours NA" });
             } finally {
-                if (!ctrl.signal.aborted) setLoading(false);
+                if (!ctrl.signal.aborted) setEnCours(false);
             }
         })();
         return () => ctrl.abort();
-    }, [du, au, actif, essai]);
+    }, [du, au, celluleIds, cle, actif, essai]);
+
+    // Demande changée ou hook désactivé : la réponse précédente est oubliée.
+    useEffect(() => () => setRecu(AUCUNE), [cle, actif]);
+
+    const { jours, loading, error } = etatJoursNa(recu, cle, actif, enCours);
 
     const recharger = useCallback(() => setEssai((n) => n + 1), []);
 

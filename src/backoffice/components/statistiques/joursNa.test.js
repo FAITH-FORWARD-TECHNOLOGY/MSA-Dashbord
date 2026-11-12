@@ -2,11 +2,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+    cleJoursNa,
     corpsJourNa,
     ErreurJoursNa,
     erreursJourNa,
     estConflitPresences,
     estDonneePerimee,
+    etatJoursNa,
     horsPeriode,
     periodeIncluant,
     trouverJourNa,
@@ -76,4 +78,27 @@ test("Période : hors période et élargissement", () => {
     assert.deepEqual(periodeIncluant(p, "2026-10-20"), { du: "2026-10-20", au: "2026-11-08" });
     // Au-delà de 366 jours : on affiche le mois de la date.
     assert.deepEqual(periodeIncluant(p, "2028-02-10"), { du: "2028-02-01", au: "2028-02-29" });
+});
+
+test("etatJoursNa : chargement tant que la réponse n'est pas celle de la date demandée", () => {
+    const jour = { groupe: "g", date: "2026-11-15", cellules: [{ id: 4, name: "Cocody" }] };
+    const cle = cleJoursNa({ du: "2026-11-15", au: "2026-11-15" });
+    const recu = { cle, jours: [jour], erreur: "" };
+    assert.deepEqual(etatJoursNa(recu, cle, true, false), { jours: [jour], error: "", loading: false });
+    // Autre date : l'ancien groupe n'est pas montré.
+    const autre = cleJoursNa({ du: "2026-11-22", au: "2026-11-22" });
+    assert.deepEqual(etatJoursNa(recu, autre, true, false), { jours: [], error: "", loading: true });
+    // Première ouverture : rien de reçu, pas de liste vide « définitive ».
+    assert.equal(etatJoursNa({ cle: "", jours: [], erreur: "" }, cle, true, false).loading, true);
+    // Rechargement de la même demande : la liste reste, en chargement.
+    assert.deepEqual(etatJoursNa(recu, cle, true, true), { jours: [jour], error: "", loading: true });
+    // Inactif : ni liste, ni erreur, ni chargement.
+    const erreur = { cle, jours: [], erreur: "Erreur 500" };
+    assert.equal(etatJoursNa(erreur, cle, true, false).error, "Erreur 500");
+    assert.deepEqual(etatJoursNa(erreur, cle, false, true), { jours: [], error: "", loading: false });
+});
+
+test("cleJoursNa : distingue période et cellules, celluleIds absent = vide", () => {
+    assert.equal(cleJoursNa({ du: "a", au: "b" }), cleJoursNa({ du: "a", au: "b", celluleIds: "" }));
+    assert.notEqual(cleJoursNa({ du: "a", au: "b" }), cleJoursNa({ du: "a", au: "b", celluleIds: "1,4" }));
 });

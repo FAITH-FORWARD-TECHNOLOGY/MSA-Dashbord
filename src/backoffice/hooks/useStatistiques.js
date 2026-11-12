@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL, authHeaders, handleUnauthorized } from "../config/api";
+import { chaineRequete } from "../components/statistiques/cellulesFiltre";
 
 // Module Statistiques : contrat dans docs-MSA-backend/module-statistiques-2026-11-07.md
 const BASE = `${API_BASE_URL}/statistiques`;
@@ -13,17 +14,12 @@ export async function messageErreur(res) {
     return msg || `Erreur ${res.status}`;
 }
 
-// Query string sans les paramètres vides (celluleId absent = toutes).
+// Query string sans les paramètres vides (celluleIds absent = toutes).
 export function construireUrl(chemin, params) {
-    const qs = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
-    });
-    const s = qs.toString();
-    return `${BASE}${chemin}${s ? `?${s}` : ""}`;
+    return `${BASE}${chemin}${chaineRequete(params)}`;
 }
 
-// Cellules autorisées pour l'utilisateur connecté (filtre « Cellule »).
+// Cellules autorisées pour l'utilisateur connecté (filtre « Cellules »).
 export function useStatistiquesCellules() {
     const [cellules, setCellules] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -63,7 +59,8 @@ export function useStatistiquesCellules() {
 }
 
 // Données JSON d'un volet ; ne charge rien tant que `actif` est faux.
-export function useStatistiquesVolet(chemin, { du, au, celluleId }, actif) {
+// celluleIds : "1,4,9" ou "" pour toutes les cellules.
+export function useStatistiquesVolet(chemin, { du, au, celluleIds }, actif) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -77,7 +74,7 @@ export function useStatistiquesVolet(chemin, { du, au, celluleId }, actif) {
                 setLoading(true);
                 setError("");
                 const res = await fetch(
-                    construireUrl(chemin, { du, au, celluleId }),
+                    construireUrl(chemin, { du, au, celluleIds }),
                     { headers: authHeaders(), signal: ctrl.signal }
                 );
                 if (handleUnauthorized(res)) return;
@@ -92,7 +89,7 @@ export function useStatistiquesVolet(chemin, { du, au, celluleId }, actif) {
             }
         })();
         return () => ctrl.abort();
-    }, [chemin, du, au, celluleId, actif, essai]);
+    }, [chemin, du, au, celluleIds, actif, essai]);
 
     const recharger = useCallback(() => setEssai((n) => n + 1), []);
 
@@ -102,11 +99,11 @@ export function useStatistiquesVolet(chemin, { du, au, celluleId }, actif) {
 // Télécharge un export (xlsx/pdf) avec le jeton, puis le propose au navigateur.
 export async function telechargerExport(
     chemin,
-    { du, au, celluleId },
+    { du, au, celluleIds },
     format,
     nomFichier
 ) {
-    const res = await fetch(construireUrl(chemin, { du, au, celluleId, format }), {
+    const res = await fetch(construireUrl(chemin, { du, au, celluleIds, format }), {
         headers: authHeaders({ accept: "*/*" }),
     });
     if (handleUnauthorized(res)) return;

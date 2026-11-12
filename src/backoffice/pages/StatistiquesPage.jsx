@@ -19,6 +19,12 @@ import EvolutionTab from "../components/statistiques/EvolutionTab";
 import PresentsTab from "../components/statistiques/PresentsTab";
 import { JourNaDetailModal, JourNaFormModal } from "../components/statistiques/JoursNaModales";
 import { horsPeriode, periodeIncluant } from "../components/statistiques/joursNa";
+import CellulesMultiSelect from "../components/statistiques/CellulesMultiSelect";
+import {
+    libelleCellules,
+    parametreCelluleIds,
+    selectionValide,
+} from "../components/statistiques/cellulesFiltre";
 import {
     dateFr,
     erreurPeriode,
@@ -42,7 +48,8 @@ const CHAMP =
 const StatistiquesPage = () => {
     const cellulesApi = useStatistiquesCellules();
     const [periode, setPeriode] = useState(periodeParDefaut);
-    const [celluleId, setCelluleId] = useState("");
+    // Cellules cochées (identifiants) ; [] = toutes les cellules.
+    const [selection, setSelection] = useState([]);
     const [ongletId, setOngletId] = useState("suivi");
     const refsOnglets = useRef([]);
     const refBoutonNa = useRef(null);
@@ -52,7 +59,10 @@ const StatistiquesPage = () => {
     // Confirmation après écriture NA : { texte, date? } (date = hors période affichée).
     const [avisNa, setAvisNa] = useState(null);
 
-    const filtres = { du: periode.du, au: periode.au, celluleId };
+    // Une cellule disparue de la liste sort de la sélection (sinon 403).
+    const cellulesChoisies = selectionValide(selection, cellulesApi.cellules);
+    const celluleIds = parametreCelluleIds(cellulesChoisies);
+    const filtres = { du: periode.du, au: periode.au, celluleIds };
     const erreurFiltre = erreurPeriode(periode.du, periode.au);
     const pret =
         !cellulesApi.loading &&
@@ -66,7 +76,17 @@ const StatistiquesPage = () => {
         evolution: useStatistiquesVolet(ONGLETS[1].chemin, filtres, pret && ongletId === "evolution"),
         presents: useStatistiquesVolet(ONGLETS[2].chemin, filtres, pret && ongletId === "presents"),
     };
-    const joursNa = useJoursNa(filtres, pret && ongletId === "suivi");
+    // Sans filtre : jours NA de la période. Filtre actif : la modale lit le groupe entier du jour ouvert.
+    const joursNa = useJoursNa(
+        { du: periode.du, au: periode.au },
+        pret && ongletId === "suivi" && celluleIds === ""
+    );
+    const dateDetail = naDetail?.infos.date ?? "";
+    const naEntier = useJoursNa(
+        { du: dateDetail, au: dateDetail },
+        pret && celluleIds !== "" && dateDetail !== ""
+    );
+    const naModale = celluleIds === "" ? joursNa : naEntier;
     const onglet = ONGLETS.find((o) => o.id === ongletId);
     const volet = volets[ongletId];
 
@@ -76,6 +96,7 @@ const StatistiquesPage = () => {
         volets.evolution.recharger();
         volets.presents.recharger();
         joursNa.recharger();
+        naEntier.recharger();
     };
     // 403 / 404 : données périmées, on recharge aussi les cellules avant de relancer l'erreur.
     const ecrireNa = async (action) => {
@@ -113,8 +134,10 @@ const StatistiquesPage = () => {
         setAvisNa({ texte: `Jour NA du ${dateFr(jour.date)} supprimé.`, date: null });
     };
 
-    const nomCellule =
-        cellulesApi.cellules.find((c) => String(c.id) === celluleId)?.name ?? "";
+    // Suffixe du fichier : nom de la cellule ou « N cellules » ; rien pour toutes.
+    const nomCellule = celluleIds
+        ? libelleCellules(cellulesChoisies, cellulesApi.cellules)
+        : "";
 
     const exporter = (format) =>
         telechargerExport(
@@ -241,24 +264,11 @@ const StatistiquesPage = () => {
                         className={CHAMP}
                     />
                 </div>
-                <div>
-                    <label htmlFor="stats-cellule" className="block text-sm font-medium text-gray-700 mb-1">
-                        Cellule
-                    </label>
-                    <select
-                        id="stats-cellule"
-                        value={celluleId}
-                        onChange={(e) => setCelluleId(e.target.value)}
-                        className={CHAMP}
-                    >
-                        <option value="">Toutes</option>
-                        {cellulesApi.cellules.map((c) => (
-                            <option key={c.id} value={String(c.id)}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <CellulesMultiSelect
+                    cellules={cellulesApi.cellules}
+                    selection={cellulesChoisies}
+                    onChange={setSelection}
+                />
                 {erreurFiltre && (
                     <p className="sm:col-span-3 text-sm text-red-600" role="alert">
                         {erreurFiltre}
@@ -364,10 +374,10 @@ const StatistiquesPage = () => {
                 <JourNaDetailModal
                     infos={naDetail.infos}
                     origine={naDetail.element}
-                    jour={trouverJourNa(joursNa.jours, naDetail.infos.date, naDetail.infos.celluleId)}
-                    chargement={joursNa.loading}
-                    erreur={joursNa.error}
-                    onRecharger={joursNa.recharger}
+                    jour={trouverJourNa(naModale.jours, naDetail.infos.date, naDetail.infos.celluleId)}
+                    chargement={naModale.loading}
+                    erreur={naModale.error}
+                    onRecharger={naModale.recharger}
                     onModifier={(jour) => {
                         setNaDetail(null);
                         setNaForm({ jour });
