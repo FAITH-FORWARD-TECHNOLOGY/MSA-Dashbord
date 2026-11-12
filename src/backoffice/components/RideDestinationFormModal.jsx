@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import {
+    debutJourAbidjan,
+    finJourAbidjan,
+    jourAbidjan,
+} from "./rideDestinationDates.js";
 
 // Modal simple basique pour créer/éditer une destination de covoiturage.
 // Reprise sur CelluleFormModal : fond sombre, carte blanche centrée,
 // champs simples, pas de gradients ni de couleurs flashy.
 function RideDestinationFormModal({ destination, onClose, onSubmit }) {
     const isEdit = Boolean(destination);
-    // Formate une date ISO (venant de l'API) en string "YYYY-MM-DD"
-    // pour les inputs HTML type="date" qui attendent ce format précis.
-    const toDateInput = (d) => {
-        if (!d) return "";
-        const date = new Date(d);
-        return isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
-    };
+    // Date ISO de l'API → jour d'Abidjan "YYYY-MM-DD" pour les champs date.
+    const toDateInput = jourAbidjan;
 
     const [formData, setFormData] = useState({
         name: destination?.name ?? "",
@@ -94,16 +94,12 @@ function RideDestinationFormModal({ destination, onClose, onSubmit }) {
             latitude,
             longitude,
         };
-        // Pour les événements on ajoute les dates au payload.
-        // endDate est réglée à 23:59:59 du jour choisi pour que l'événement
-        // reste actif toute la journée de fin (et pas seulement jusqu'à minuit).
+        // Pour les événements on ajoute les dates au payload. Les deux bornes
+        // sont des jours d'Abidjan : début 00:00, fin 23:59:59 (l'événement
+        // reste actif toute la journée de fin).
         if (formData.type === "evenement") {
-            payload.startDate = formData.startDate
-                ? new Date(formData.startDate).toISOString()
-                : null;
-            payload.endDate = formData.endDate
-                ? new Date(formData.endDate + "T23:59:59").toISOString()
-                : null;
+            payload.startDate = debutJourAbidjan(formData.startDate);
+            payload.endDate = finJourAbidjan(formData.endDate);
         }
 
         try {
@@ -209,6 +205,10 @@ function RideDestinationFormModal({ destination, onClose, onSubmit }) {
                                         disabled={isLoading}
                                     />
                                 </div>
+                                <p className="col-span-2 text-xs text-gray-500">
+                                    Jours à l'heure d'Abidjan (GMT) : début
+                                    à 00:00, fin à 23:59:59.
+                                </p>
                             </div>
                         )}
 
