@@ -77,6 +77,24 @@ export function useCommunication() {
         return true;
     };
 
+    // Ordre des annonces : le serveur renvoie la liste réordonnée, sans
+    // repasser par l'état de chargement (le tableau garde le focus clavier).
+    const reorderAnnouncements = async (ids) => {
+        try {
+            const list = await request('/announcements/order', {
+                method: 'PATCH',
+                body: JSON.stringify({ ids }),
+            });
+            if (Array.isArray(list)) setAnnouncements(list);
+            else await fetchAll();
+            return true;
+        } catch (err) {
+            // Liste probablement périmée (autre admin) : on la relit.
+            await fetchAll();
+            throw err;
+        }
+    };
+
     // Pre-remplissage depuis un lien : titre, chaine, miniature, duree.
     const resolveLink = (url) =>
         request(`/resolve?url=${encodeURIComponent(url)}`);
@@ -99,6 +117,7 @@ export function useCommunication() {
         createAnnouncement: (p) => mutate('/announcements', 'POST', p),
         updateAnnouncement: (id, p) => mutate(`/announcements/${id}`, 'PATCH', p),
         deleteAnnouncement: (id) => mutate(`/announcements/${id}`, 'DELETE'),
+        reorderAnnouncements,
         createRubrique: (p) => mutate('/rubriques', 'POST', p),
         updateRubrique: (id, p) => mutate(`/rubriques/${id}`, 'PATCH', p),
         deleteRubrique: (id) => mutate(`/rubriques/${id}`, 'DELETE'),
