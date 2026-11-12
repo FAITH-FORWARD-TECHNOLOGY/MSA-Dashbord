@@ -6,6 +6,7 @@ import AddActivityModal from "../components/AddActivityForm";
 import EditUserModal from "../components/EditUserModal";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
+import { libelleLieuUtilisateur } from "../utils/referentiel";
 
 export default function UserProfil() {
     const { id } = useParams();
@@ -69,8 +70,12 @@ export default function UserProfil() {
                 },
                 body: JSON.stringify(data),
             });
-            if (!res.ok)
-                throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+            if (!res.ok) {
+                // Message du serveur (quartier inconnu, email déjà pris…) affiché dans la modale.
+                const body = await res.json().catch(() => ({}));
+                const message = Array.isArray(body.message) ? body.message.join(" ; ") : body.message;
+                throw new Error(message || `Erreur ${res.status}`);
+            }
             await fetchUser();
             setIsEditOpen(false);
         } catch (err) {
@@ -212,6 +217,9 @@ export default function UserProfil() {
                             </p>
                             <p className="text-gray-700">
                                 Pays : {user.pays?.nom} ({user.pays?.code})
+                            </p>
+                            <p className="text-gray-700">
+                                Quartier : {libelleLieuUtilisateur(user) || "non renseigné"}
                             </p>
                             <p className="text-gray-700">
                                 Rôle :{" "}
