@@ -76,6 +76,14 @@ const router = createBrowserRouter([
                         (m) => ({ Component: m.default })
                     ),
             },
+            // Répartition des membres par quartier (admin), chargée à la demande.
+            {
+                path: "membres-par-quartier",
+                lazy: () =>
+                    import("./backoffice/pages/MembresParQuartierPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             // Route "/destinations" → CRUD covoiturage (lien dans le Header).
             {
                 path: "destinations",
