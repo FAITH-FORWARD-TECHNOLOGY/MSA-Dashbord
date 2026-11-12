@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import {
+    ArrowDown,
+    ArrowUp,
+    ExternalLink,
+    Heart,
+    Pencil,
+    Trash2,
+} from "lucide-react";
 import {
     ETAT_FILTERS,
     ETAT_LABELS,
@@ -10,6 +17,8 @@ import {
     formatAnnouncementDate,
     formatWindowDate,
     isHttpUrl,
+    likesCount,
+    likesLabel,
     moveWithin,
 } from "../utils/announcements";
 
@@ -136,6 +145,7 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                             <th scope="col" className="text-left p-3">Rubrique</th>
                             <th scope="col" className="text-left p-3">Lien</th>
                             <th scope="col" className="text-left p-3">État</th>
+                            <th scope="col" className="text-left p-3">J’aime</th>
                             <th scope="col" className="text-left p-3">Ordre</th>
                             <th scope="col" className="text-right p-3">Actions</th>
                         </tr>
@@ -193,6 +203,16 @@ function AnnouncementTable({ announcements, onEdit, onDelete, onReorder }) {
                                             Fin : {formatWindowDate(r.endsAt)}
                                         </span>
                                     )}
+                                </td>
+                                <td className="p-3 whitespace-nowrap text-gray-700">
+                                    <span className="sr-only">{likesLabel(r.likes)}</span>
+                                    <span
+                                        aria-hidden="true"
+                                        className="inline-flex items-center gap-1 tabular-nums"
+                                    >
+                                        <Heart size={14} className="text-gray-500" />
+                                        {likesCount(r.likes)}
+                                    </span>
                                 </td>
                                 <td className="p-3 whitespace-nowrap">
                                     <span className="inline-block w-6 text-gray-600">
