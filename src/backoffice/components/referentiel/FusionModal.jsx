@@ -9,17 +9,17 @@ import {
     useRessemblants,
     useValeurRetardee,
 } from "../../hooks/useReferentiel";
-import { candidatsFusion, libelleStatut, phraseFusion, tonStatut } from "../../utils/referentiel";
+import { candidatsFusion, libelleStatut, phraseFusion, STATUT_VALIDE, tonStatut } from "../../utils/referentiel";
 import { libelleMembres } from "../../utils/repartition";
 
-// Fusion d'un quartier dans un autre de la même commune : choix du quartier conservé, puis confirmation.
+// Fusion d'un quartier dans un autre, validé, de la même commune : choix du quartier conservé, puis confirmation.
 
 const LIMITE = 100;
 
 function Contenu({ source, onFermer, onFusionne }) {
     const [recherche, setRecherche] = useState("");
     const q = useValeurRetardee(recherche);
-    const liste = useQuartiers({ communeId: source.commune.id, q, limite: LIMITE });
+    const liste = useQuartiers({ communeId: source.commune.id, statut: STATUT_VALIDE, q, limite: LIMITE });
     const proches = useRessemblants({ communeId: source.commune.id, nom: source.nom });
     const [cibleId, setCibleId] = useState(null);
     // apercu : réponse du serveur, affichée avant la confirmation.
@@ -118,7 +118,7 @@ function Contenu({ source, onFermer, onFusionne }) {
 
             <fieldset>
                 <legend className="text-sm font-medium text-gray-700">
-                    Quartier à conserver (commune {source.commune.nom} uniquement)
+                    Quartier à conserver (quartiers validés de {source.commune.nom} uniquement)
                 </legend>
                 <div className="relative mt-2">
                     <label htmlFor={idRecherche} className="sr-only">
@@ -144,7 +144,7 @@ function Contenu({ source, onFermer, onFusionne }) {
                         <p className="px-3 py-4 text-center text-sm text-gray-500">
                             {q.trim()
                                 ? "Aucun quartier de cette commune ne correspond."
-                                : "Cette commune n'a pas d'autre quartier."}
+                                : "Cette commune n'a pas d'autre quartier validé."}
                         </p>
                     ) : (
                         <ul className="divide-y divide-gray-100">
@@ -160,7 +160,6 @@ function Contenu({ source, onFermer, onFusionne }) {
                                         />
                                         <span className="min-w-0 flex-1 break-words text-gray-900">{c.nom}</span>
                                         {idsProches.has(c.id) && <Pastille ton="ambre">Ressemble</Pastille>}
-                                        {c.statut !== "VALIDE" && <Pastille ton="ambre">{libelleStatut(c.statut)}</Pastille>}
                                         <span className="shrink-0 text-xs tabular-nums text-gray-500">
                                             {libelleMembres(c.membres)}
                                         </span>

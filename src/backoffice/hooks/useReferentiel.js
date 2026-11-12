@@ -7,7 +7,9 @@ import {
     parametresCommunes,
     parametresQuartiers,
     parametresRecherche,
+    parametresRechercheAdmin,
     parametresRessemblants,
+    resultatsRecherche,
     trierPays,
 } from "../utils/referentiel";
 
@@ -107,10 +109,12 @@ export function useQuartiers(filtres, actif = true) {
     return useLecture(`${ADMIN}/quartiers`, parametresQuartiers(filtres), actif);
 }
 
-// Quartiers validés ressemblant à la saisie (8 au plus) ; inactif si `actif` est faux.
-export function useRechercheQuartiers(filtres, actif = true) {
-    const lecture = useLecture("/zones/quartiers/recherche", parametresRecherche(filtres), actif);
-    return { ...lecture, quartiers: Array.isArray(lecture.data) ? lecture.data : [] };
+// Quartiers trouvés pour la saisie (8 au plus) : liste admin (en attente compris) ou recherche publique (validés).
+export function useRechercheQuartiers(filtres, actif = true, admin = false) {
+    const publique = useLecture("/zones/quartiers/recherche", parametresRecherche(filtres), actif && !admin);
+    const parAdmin = useLecture(`${ADMIN}/quartiers`, parametresRechercheAdmin(filtres), actif && admin);
+    const lecture = admin ? parAdmin : publique;
+    return { ...lecture, ...resultatsRecherche(lecture.data) };
 }
 
 // Quartiers de la commune qui ressemblent au nom saisi ; inactif tant que la saisie est incomplète.

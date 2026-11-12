@@ -180,7 +180,7 @@ export default function QuartiersPage() {
 
     return (
         <div className="mx-auto max-w-6xl space-y-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Quartiers</h1>
                     <p className="mt-1 text-sm text-gray-600">
@@ -188,12 +188,13 @@ export default function QuartiersPage() {
                         restent « En attente » jusqu'à leur validation.
                     </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                    <button type="button" className={BOUTON_SECONDAIRE} onClick={() => setImportOuvert(true)}>
+                {/* Boutons sur une ligne, texte jamais coupé ; en colonne sur téléphone. */}
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                    <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
                         <Upload className="size-4" aria-hidden="true" />
                         {IMPORTS.quartiers.bouton}
                     </button>
-                    <button type="button" className={BOUTON_PRIMAIRE} onClick={() => setFormulaire({})}>
+                    <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
                         <Plus className="size-4" aria-hidden="true" />
                         Ajouter un quartier
                     </button>
@@ -347,9 +348,9 @@ export default function QuartiersPage() {
                                         {enAttente ? (
                                             <th scope="col" className="hidden px-3 py-2 lg:table-cell">Proposé par</th>
                                         ) : (
-                                            <th scope="col" className="px-3 py-2">Statut</th>
+                                            <th scope="col" className="hidden px-3 py-2 sm:table-cell">Statut</th>
                                         )}
-                                        <th scope="col" className="px-3 py-2 text-right">Membres</th>
+                                        <th scope="col" className="hidden px-3 py-2 text-right sm:table-cell">Membres</th>
                                         <th scope="col" className="px-4 py-2 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -358,12 +359,21 @@ export default function QuartiersPage() {
                                         <tr key={z.id} className="align-top hover:bg-gray-50">
                                             <th scope="row" className="px-4 py-2 text-left font-medium text-gray-900">
                                                 <span className="break-words">{z.nom}</span>
+                                                {/* Téléphone : statut et membres passent sous le nom pour que le tableau tienne dans l'écran. */}
+                                                {!enAttente && (
+                                                    <span className="mt-1 block sm:hidden">
+                                                        <Pastille ton={tonStatut(z.statut)}>{libelleStatut(z.statut)}</Pastille>
+                                                    </span>
+                                                )}
                                                 <span className="block text-xs font-normal text-gray-500 md:hidden">
                                                     {z.commune?.nom}
                                                     {z.pays?.nom ? `, ${z.pays.nom}` : ""}
                                                 </span>
                                                 <span className="hidden text-xs font-normal text-gray-500 md:block lg:hidden">
                                                     {z.pays?.nom}
+                                                </span>
+                                                <span className="block text-xs font-normal tabular-nums text-gray-500 sm:hidden">
+                                                    {libelleMembres(z.membres)}
                                                 </span>
                                                 {enAttente && (
                                                     <span className="block text-xs font-normal text-gray-500 lg:hidden">
@@ -382,15 +392,18 @@ export default function QuartiersPage() {
                                                     <span className="block text-xs text-gray-500">{dateFr(z.createdAt)}</span>
                                                 </td>
                                             ) : (
-                                                <td className="px-3 py-2">
+                                                <td className="hidden px-3 py-2 sm:table-cell">
                                                     <Pastille ton={tonStatut(z.statut)}>{libelleStatut(z.statut)}</Pastille>
                                                 </td>
                                             )}
-                                            <td className="px-3 py-2 text-right tabular-nums text-gray-800" aria-label={libelleMembres(z.membres)}>
+                                            <td
+                                                className="hidden px-3 py-2 text-right tabular-nums text-gray-800 sm:table-cell"
+                                                aria-label={libelleMembres(z.membres)}
+                                            >
                                                 {z.membres}
                                             </td>
                                             <td className="px-4 py-2">
-                                                <div className="flex flex-wrap justify-end gap-2">
+                                                <div className="flex justify-end gap-2">
                                                     {enAttente && (
                                                         <button
                                                             type="button"

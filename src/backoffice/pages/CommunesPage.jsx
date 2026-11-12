@@ -66,19 +66,20 @@ export default function CommunesPage() {
 
     return (
         <div className="mx-auto max-w-5xl space-y-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Communes</h1>
                     <p className="mt-1 text-sm text-gray-600">
                         Communes de chaque pays, auxquelles les quartiers sont rattachés.
                     </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                    <button type="button" className={BOUTON_SECONDAIRE} onClick={() => setImportOuvert(true)}>
+                {/* Boutons sur une ligne, texte jamais coupé ; en colonne sur téléphone. */}
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                    <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
                         <Upload className="size-4" aria-hidden="true" />
                         {IMPORTS.communes.bouton}
                     </button>
-                    <button type="button" className={BOUTON_PRIMAIRE} onClick={() => setFormulaire({})}>
+                    <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
                         <Plus className="size-4" aria-hidden="true" />
                         Ajouter une commune
                     </button>

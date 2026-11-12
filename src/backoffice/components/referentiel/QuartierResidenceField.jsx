@@ -37,13 +37,15 @@ export default function QuartierResidenceField({
     const propre = nettoyerNom(saisie);
     const q = useValeurRetardee(propre);
     const assezLong = propre.length >= NOM_MIN;
-    const recherche = useRechercheQuartiers({ q }, q.length >= NOM_MIN);
+    const { user } = useAuth();
+    const estAdmin = user?.role === "ADMIN";
+    // Admin : liste admin, qui trouve aussi les quartiers en attente.
+    const recherche = useRechercheQuartiers({ q }, q.length >= NOM_MIN, estAdmin);
     // Tant que la requête de la saisie courante n'est pas revenue, aucun ancien résultat n'est proposé.
     const loading = recherche.loading || q !== propre;
-    const { quartiers, error } = recherche;
-    const { user } = useAuth();
+    const { quartiers, tronquee, error } = recherche;
     // La création d'un quartier passe par une route réservée aux admins.
-    const peutCreer = creation && user?.role === "ADMIN";
+    const peutCreer = creation && estAdmin;
     const id = useId();
 
     const message = !assezLong
@@ -54,7 +56,7 @@ export default function QuartierResidenceField({
             ? error
             : quartiers.length === 0
               ? `Aucun quartier trouvé pour « ${q} ».`
-              : quartiers.length >= MAX_RESULTATS
+              : tronquee
                 ? `${MAX_RESULTATS} premiers résultats : précisez la recherche si besoin.`
                 : "";
 
@@ -106,7 +108,12 @@ export default function QuartierResidenceField({
                         !loading &&
                         quartiers.map((z) => (
                             <ComboboxOption key={z.id} value={z} className={OPTION}>
-                                <span className="break-words">{z.nom}</span>
+                                <span className="flex flex-wrap items-center gap-2">
+                                    <span className="break-words">{z.nom}</span>
+                                    {z.statut === STATUT_EN_ATTENTE && (
+                                        <Pastille ton="ambre">{libelleStatut(z.statut)}</Pastille>
+                                    )}
+                                </span>
                                 <span className="text-xs text-gray-500">
                                     {[z.commune?.nom, z.pays?.nom].filter(Boolean).join(", ")}
                                 </span>

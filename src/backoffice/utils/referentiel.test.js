@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
     CLASSE_A_CREER,
+    CLASSE_DOUBLON,
     CLASSE_ERREUR,
     CLASSE_EXISTANT,
     SANS_QUARTIER,
@@ -28,11 +29,13 @@ import {
     parametresCommunes,
     parametresQuartiers,
     parametresRecherche,
+    parametresRechercheAdmin,
     parametresRessemblants,
     parametresUtilisateurs,
     phraseFusion,
     quartierUtilisateur,
     ressemblantIdentique,
+    resultatsRecherche,
     tonStatut,
     trierPays,
 } from "./referentiel.js";
@@ -125,12 +128,13 @@ test("ressemblants : quartier identique repéré", () => {
     assert.equal(ressemblantIdentique(undefined), null);
 });
 
-test("fusion : candidats de la même commune seulement, sans le quartier supprimé", () => {
-    const source = { id: 900, nom: "Rivera 2", commune: { id: 12, nom: "Cocody" } };
+test("fusion : candidats validés de la même commune seulement, sans le quartier supprimé", () => {
+    const source = { id: 900, nom: "Rivera 2", statut: "A_VALIDER", commune: { id: 12, nom: "Cocody" } };
     const quartiers = [
         source,
-        { id: 345, nom: "Riviera 2", commune: { id: 12, nom: "Cocody" } },
-        { id: 500, nom: "Riviera 2", commune: { id: 14, nom: "Yopougon" } },
+        { id: 345, nom: "Riviera 2", statut: "VALIDE", commune: { id: 12, nom: "Cocody" } },
+        { id: 346, nom: "Riviera Deux", statut: "A_VALIDER", commune: { id: 12, nom: "Cocody" } },
+        { id: 500, nom: "Riviera 2", statut: "VALIDE", commune: { id: 14, nom: "Yopougon" } },
     ];
     assert.deepEqual(candidatsFusion(quartiers, source).map((q) => q.id), [345]);
     assert.deepEqual(candidatsFusion(quartiers, null), []);
@@ -165,21 +169,38 @@ test("import : Excel seul pour les communes, Excel ou CSV pour les quartiers", (
     assert.equal(erreurFichier(null, "communes"), "Choisissez un fichier.");
 });
 
-test("aperçu : lignes classées à créer / déjà existantes / en erreur", () => {
+test("aperçu : lignes classées à créer / déjà existantes / doublons du fichier / en erreur", () => {
     const classes = classerApercu(LIGNES);
     assert.deepEqual(classes[CLASSE_A_CREER].map((l) => l.ligne), [2, 8]);
-    assert.deepEqual(classes[CLASSE_EXISTANT].map((l) => l.ligne), [3, 4]);
+    assert.deepEqual(classes[CLASSE_EXISTANT].map((l) => l.ligne), [3]);
+    assert.deepEqual(classes[CLASSE_DOUBLON].map((l) => l.ligne), [4]);
     assert.deepEqual(classes[CLASSE_ERREUR].map((l) => l.ligne), [5, 7]);
     // Statut inconnu : traité comme une erreur, jamais comme une création.
     assert.deepEqual(classerApercu([{ ligne: 2, statut: "???" }])[CLASSE_ERREUR].length, 1);
-    assert.deepEqual(classerApercu(undefined), { [CLASSE_A_CREER]: [], [CLASSE_EXISTANT]: [], [CLASSE_ERREUR]: [] });
+    // Raison « doublon » sur une ligne rejetée : reste une erreur.
+    assert.equal(classerApercu([{ ligne: 2, statut: "REJETE", raison: "Doublon dans le fichier (ligne 1)" }])[CLASSE_ERREUR].length, 1);
+    assert.deepEqual(classerApercu(undefined), {
+        [CLASSE_A_CREER]: [],
+        [CLASSE_EXISTANT]: [],
+        [CLASSE_DOUBLON]: [],
+        [CLASSE_ERREUR]: [],
+    });
     assert.equal(libelleStatutLigne(LIGNES[0]), "À créer");
     assert.equal(libelleStatutLigne(LIGNES[1]), "Déjà existant");
+    assert.equal(libelleStatutLigne(LIGNES[2]), "Doublon dans le fichier");
     assert.equal(libelleStatutLigne(LIGNES[3]), "En erreur");
 });
 
+test("rapport : les lignes importées passent à « Importé »", () => {
+    assert.equal(libelleStatutLigne(LIGNES[0], true), "Importé");
+    assert.equal(libelleStatutLigne(LIGNES[1], true), "Déjà existant");
+    assert.equal(libelleStatutLigne(LIGNES[2], true), "Doublon dans le fichier");
+    assert.equal(libelleStatutLigne(LIGNES[3], true), "En erreur");
+});
+
 test("aperçu : erreurs en tête, puis filtre par classe", () => {
-    assert.deepEqual(lignesVisibles(LIGNES).map((l) => l.ligne), [5, 7, 3, 4, 2, 8]);
+    assert.deepEqual(lignesVisibles(LIGNES).map((l) => l.ligne), [5, 7, 4, 3, 2, 8]);
+    assert.deepEqual(lignesVisibles(LIGNES, CLASSE_DOUBLON).map((l) => l.ligne), [4]);
     assert.deepEqual(lignesVisibles(LIGNES, CLASSE_ERREUR).map((l) => l.ligne), [5, 7]);
     assert.deepEqual(lignesVisibles(LIGNES, CLASSE_A_CREER).map((l) => l.ligne), [2, 8]);
     assert.deepEqual(lignesVisibles(undefined), []);
@@ -188,18 +209,32 @@ test("aperçu : erreurs en tête, puis filtre par classe", () => {
 test("aperçu : compteurs accordés (communes au féminin, quartiers au masculin)", () => {
     assert.deepEqual(
         compteursImport(RESUME, "communes").map((c) => `${c.nombre} ${c.libelle}`),
-        ["2 à créer", "2 déjà existantes", "2 en erreur"]
+        ["2 à créer", "2 déjà existantes", "0 doublon dans le fichier", "2 en erreur"]
     );
     assert.deepEqual(
         compteursImport({ importes: 1, ignores: 1, rejetes: 0 }, "quartiers").map((c) => `${c.nombre} ${c.libelle}`),
-        ["1 à créer", "1 déjà existant", "0 en erreur"]
+        ["1 à créer", "1 déjà existant", "0 doublon dans le fichier", "0 en erreur"]
+    );
+    // Ignorés séparés d'après la raison des lignes : doublons du fichier et déjà existants.
+    assert.deepEqual(
+        compteursImport(RESUME, "quartiers", false, LIGNES).map((c) => `${c.nombre} ${c.libelle}`),
+        ["2 à créer", "1 déjà existant", "1 doublon dans le fichier", "2 en erreur"]
+    );
+    const doublons = [4, 5, 6].map((ligne) => ({ ligne, statut: "IGNORE", raison: "Doublon dans le fichier (ligne 2)" }));
+    assert.deepEqual(
+        compteursImport({ importes: 1, ignores: 3, rejetes: 0 }, "communes", false, doublons).map((c) => c.libelle),
+        ["à créer", "déjà existante", "doublons dans le fichier", "en erreur"]
     );
     // Rapport final : le vocabulaire passe au passé.
     assert.deepEqual(
-        compteursImport(RESUME, "communes", true).map((c) => `${c.nombre} ${c.libelle}`),
-        ["2 créées", "2 ignorées (déjà existantes)", "2 en erreur"]
+        compteursImport(RESUME, "communes", true, LIGNES).map((c) => `${c.nombre} ${c.libelle}`),
+        ["2 importées", "1 ignorée (déjà existante)", "1 ignorée (doublon dans le fichier)", "2 en erreur"]
     );
-    assert.deepEqual(compteursImport(undefined, "quartiers").map((c) => c.nombre), [0, 0, 0]);
+    assert.deepEqual(
+        compteursImport({ importes: 3, ignores: 2, rejetes: 0 }, "quartiers", true).map((c) => `${c.nombre} ${c.libelle}`),
+        ["3 importés", "2 ignorés (déjà existants)", "0 ignoré (doublon dans le fichier)", "0 en erreur"]
+    );
+    assert.deepEqual(compteursImport(undefined, "quartiers").map((c) => c.nombre), [0, 0, 0, 0]);
 });
 
 test("aperçu : bouton de validation", () => {
@@ -267,4 +302,19 @@ test("utilisateurs : filtre « Quartier » en paramètres de GET /users", () => 
     assert.equal(libelleFiltreQuartier(SANS_QUARTIER), "Sans quartier renseigné");
     assert.equal(libelleFiltreQuartier({ nom: "Riviera 2", commune: { nom: "Cocody" } }), "Riviera 2, Cocody");
     assert.equal(libelleFiltreQuartier(null), "");
+});
+
+test("champ « Quartier » (admin) : liste admin limitée à 8, tous statuts", () => {
+    assert.equal(chaineRequete(parametresRechercheAdmin({ q: "  gonzag " })), "?q=gonzag&limite=8");
+    assert.equal(chaineRequete(parametresRechercheAdmin()), "?limite=8");
+});
+
+test("champ « Quartier » : suggestions de la recherche publique ou de la liste admin", () => {
+    const q = (id, statut = "VALIDE") => ({ id, nom: `Q${id}`, statut });
+    assert.deepEqual(resultatsRecherche(undefined), { quartiers: [], tronquee: false });
+    assert.deepEqual(resultatsRecherche([q(1)]), { quartiers: [q(1)], tronquee: false });
+    assert.equal(resultatsRecherche([1, 2, 3, 4, 5, 6, 7, 8].map((i) => q(i))).tronquee, true);
+    const admin = { total: 1, enAttente: 1, quartiers: [q(9, "A_VALIDER")] };
+    assert.deepEqual(resultatsRecherche(admin), { quartiers: [q(9, "A_VALIDER")], tronquee: false });
+    assert.equal(resultatsRecherche({ total: 12, quartiers: [q(1), q(2)] }).tronquee, true);
 });

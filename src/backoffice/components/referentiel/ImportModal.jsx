@@ -14,6 +14,7 @@ import { envoyerImport, telechargerModele, telechargerRapport } from "../../hook
 import {
     classeLigne,
     CLASSE_A_CREER,
+    CLASSE_DOUBLON,
     CLASSE_ERREUR,
     CLASSE_EXISTANT,
     compteursImport,
@@ -26,17 +27,18 @@ import {
 
 // Import d'un fichier en trois temps : choix et vérification, aperçu, rapport final.
 
-const TON_CLASSE = { [CLASSE_A_CREER]: "vert", [CLASSE_EXISTANT]: "gris", [CLASSE_ERREUR]: "rouge" };
+const TON_CLASSE = { [CLASSE_A_CREER]: "vert", [CLASSE_EXISTANT]: "gris", [CLASSE_DOUBLON]: "ambre", [CLASSE_ERREUR]: "rouge" };
 const TON_COMPTEUR = {
     vert: "border-green-200 bg-green-50 text-green-900",
     gris: "border-gray-200 bg-gray-50 text-gray-800",
+    ambre: "border-amber-200 bg-amber-50 text-amber-900",
     rouge: "border-red-200 bg-red-50 text-red-900",
 };
 
 // Compteurs cliquables : filtrent le tableau des lignes.
 function Compteurs({ compteurs, classe, onClasse }) {
     return (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {compteurs.map((c) => (
                 <button
                     key={c.classe}
@@ -53,7 +55,7 @@ function Compteurs({ compteurs, classe, onClasse }) {
     );
 }
 
-function TableauLignes({ lignes, avecQuartier, legende }) {
+function TableauLignes({ lignes, avecQuartier, legende, termine }) {
     if (lignes.length === 0) {
         return <p className="rounded-md bg-gray-50 px-3 py-4 text-center text-sm text-gray-500">Aucune ligne dans cette catégorie.</p>;
     }
@@ -78,7 +80,7 @@ function TableauLignes({ lignes, avecQuartier, legende }) {
                             <td className="px-3 py-2 text-gray-800">{l.commune || "—"}</td>
                             {avecQuartier && <td className="px-3 py-2 text-gray-800">{l.quartier || "—"}</td>}
                             <td className="px-3 py-2">
-                                <Pastille ton={TON_CLASSE[classeLigne(l)]}>{libelleStatutLigne(l)}</Pastille>
+                                <Pastille ton={TON_CLASSE[classeLigne(l)]}>{libelleStatutLigne(l, termine)}</Pastille>
                                 {l.raison && <p className="mt-1 text-xs text-gray-600">{l.raison}</p>}
                             </td>
                         </tr>
@@ -248,10 +250,11 @@ function Contenu({ type, onFermer, onImporte, onOccupe }) {
                     {resume.lignesVides > 0 && ` · ${resume.lignesVides} ligne${resume.lignesVides > 1 ? "s" : ""} vide${resume.lignesVides > 1 ? "s" : ""} ignorée${resume.lignesVides > 1 ? "s" : ""}`}
                 </p>
             </div>
-            <Compteurs compteurs={compteursImport(resume, type, termine)} classe={classe} onClasse={setClasse} />
+            <Compteurs compteurs={compteursImport(resume, type, termine, resultat?.lignes)} classe={classe} onClasse={setClasse} />
             <TableauLignes
                 lignes={lignes}
                 avecQuartier={type === "quartiers"}
+                termine={termine}
                 legende={termine ? "Résultat de l'import, ligne par ligne" : "Aperçu de l'import, ligne par ligne"}
             />
             <AlerteErreur>{erreur}</AlerteErreur>
