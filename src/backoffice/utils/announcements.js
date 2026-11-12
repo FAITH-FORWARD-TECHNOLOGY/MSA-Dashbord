@@ -207,6 +207,17 @@ export function formatAnnouncementDate(iso) {
     }).format(date);
 }
 
+// Nombre de j'aime affichable : entier positif, sinon 0.
+export function likesCount(value) {
+    return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+// Libellé lu par les lecteurs d'écran, ex. "3 j'aime".
+export function likesLabel(value) {
+    const count = likesCount(value);
+    return count === 0 ? "Aucun j’aime" : `${count} j’aime`;
+}
+
 export function isHttpUrl(value) {
     if (typeof value !== "string" || /\s/.test(value.trim())) return false;
     try {

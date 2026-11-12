@@ -9,6 +9,8 @@ import {
     emptyAnnouncementForm,
     formatAnnouncementDate,
     isHttpUrl,
+    likesCount,
+    likesLabel,
     moveId,
     validateAnnouncementForm,
 } from "./announcements.js";
@@ -168,4 +170,15 @@ test("monter et descendre réécrivent l'ordre complet", () => {
     assert.equal(moveId([3, 1, 2], 3, -1), null);
     assert.equal(moveId([3, 1, 2], 2, 1), null);
     assert.equal(moveId([3, 1, 2], 9, 1), null);
+});
+
+test("j'aime : compteur réel affiché, 0 pour une valeur absente ou invalide", () => {
+    assert.equal(likesCount(12), 12);
+    assert.equal(likesCount(0), 0);
+    for (const valeur of [undefined, null, "12", -3, 1.5, NaN]) {
+        assert.equal(likesCount(valeur), 0);
+    }
+    assert.equal(likesLabel(3), "3 j’aime");
+    assert.equal(likesLabel(1), "1 j’aime");
+    assert.equal(likesLabel(undefined), "Aucun j’aime");
 });
