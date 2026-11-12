@@ -25,6 +25,7 @@ const navigation = [
             { name: "Utilisateurs", href: "/users" },
             { name: "Cellules", href: "/cellules" },
             { name: "Statistiques", href: "/statistiques" },
+            { name: "Export des données", href: "/export-donnees", adminOnly: true },
         ],
     },
     {
@@ -284,6 +285,14 @@ function Header() {
         return location.pathname.startsWith(href);
     };
 
+    // Liens réservés aux admins masqués pour les autres comptes.
+    const navigationVisible = navigation
+        .map((g) => ({
+            ...g,
+            items: g.items.filter((i) => !i.adminOnly || user?.role === "ADMIN"),
+        }))
+        .filter((g) => g.items.length > 0);
+
     const isActiveGroup = (group) =>
         group.items.some((item) => isActivePath(item.href));
 
@@ -324,7 +333,7 @@ function Header() {
                         </div>
                         <div className="hidden md:block">
                             <div className="ml-8 flex items-center gap-1">
-                                {navigation.map((group) => {
+                                {navigationVisible.map((group) => {
                                     const groupActive = isActiveGroup(group);
                                     return (
                                         <NavGroup
@@ -418,7 +427,7 @@ function Header() {
             {/* Mobile menu : mêmes groupes, en sections titrées */}
             <DisclosurePanel className="md:hidden bg-gray-900 border-t border-gray-700">
                 <div className="space-y-4 px-2 pt-3 pb-4 sm:px-3">
-                    {navigation.map((group, index) => (
+                    {navigationVisible.map((group, index) => (
                         <section
                             key={group.name}
                             aria-labelledby={`nav-mobile-${index}`}

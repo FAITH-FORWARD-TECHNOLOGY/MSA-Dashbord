@@ -68,6 +68,14 @@ const router = createBrowserRouter([
                         (m) => ({ Component: m.default })
                     ),
             },
+            // Export brut des données (admin), chargé à la demande.
+            {
+                path: "export-donnees",
+                lazy: () =>
+                    import("./backoffice/pages/ExportDonneesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             // Route "/destinations" → CRUD covoiturage (lien dans le Header).
             {
                 path: "destinations",
