@@ -14,19 +14,43 @@ export function useCommunication() {
     const [error, setError] = useState('');
 
     // Les routes /communication/admin/* sont protégées par JwtAuthGuard.
-    const authHeaders = () => {
-        let token = '';
+    const authToken = () => {
         try {
             const stored = localStorage.getItem('jobhubs_auth');
-            if (stored) token = JSON.parse(stored)?.user?.token ?? '';
+            return stored ? (JSON.parse(stored)?.user?.token ?? '') : '';
         } catch {
-            token = '';
+            return '';
         }
+    };
+
+    const authHeaders = () => {
+        const token = authToken();
         return {
             accept: '*/*',
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
+    };
+
+    // Envoi d'une image d'annonce sur le backend MSA ; renvoie son URL.
+    // Pas de Content-Type : le navigateur pose la frontière multipart.
+    const uploadAnnouncementImage = async (file) => {
+        const body = new FormData();
+        body.append('file', file);
+        const token = authToken();
+        const response = await fetch(`${API_BASE_URL}/communication/admin/uploads`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body,
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.status === 413) {
+            throw new Error('Image trop lourde : 5 Mo maximum.');
+        }
+        if (!response.ok || !result.url) {
+            throw new Error(result.message || `Échec de l'envoi (erreur ${response.status})`);
+        }
+        return result.url;
     };
 
     const request = async (path, options = {}) => {
@@ -77,6 +101,24 @@ export function useCommunication() {
         return true;
     };
 
+    // Ordre des annonces : le serveur renvoie la liste réordonnée, sans
+    // repasser par l'état de chargement (le tableau garde le focus clavier).
+    const reorderAnnouncements = async (ids) => {
+        try {
+            const list = await request('/announcements/order', {
+                method: 'PATCH',
+                body: JSON.stringify({ ids }),
+            });
+            if (Array.isArray(list)) setAnnouncements(list);
+            else await fetchAll();
+            return true;
+        } catch (err) {
+            // Liste probablement périmée (autre admin) : on la relit.
+            await fetchAll();
+            throw err;
+        }
+    };
+
     // Pre-remplissage depuis un lien : titre, chaine, miniature, duree.
     const resolveLink = (url) =>
         request(`/resolve?url=${encodeURIComponent(url)}`);
@@ -99,6 +141,8 @@ export function useCommunication() {
         createAnnouncement: (p) => mutate('/announcements', 'POST', p),
         updateAnnouncement: (id, p) => mutate(`/announcements/${id}`, 'PATCH', p),
         deleteAnnouncement: (id) => mutate(`/announcements/${id}`, 'DELETE'),
+        reorderAnnouncements,
+        uploadAnnouncementImage,
         createRubrique: (p) => mutate('/rubriques', 'POST', p),
         updateRubrique: (id, p) => mutate(`/rubriques/${id}`, 'PATCH', p),
         deleteRubrique: (id) => mutate(`/rubriques/${id}`, 'DELETE'),

@@ -8,20 +8,12 @@ import {
     Wand2,
 } from "lucide-react";
 import { useCommunication } from "../hooks/useCommunication";
+import AnnouncementForm from "../components/AnnouncementForm";
+import AnnouncementTable from "../components/AnnouncementTable";
+import { liveScheduleHint, liveScheduleLabels } from "../utils/lives";
 
 // Page "Communication" du back-office : médiathèque (vidéos) et directs.
 // Chaque contenu = un lien YouTube saisi ici ; l'app mobile ouvre ce lien.
-
-const emptyAnnouncement = {
-    title: "",
-    rubriqueId: "",
-    dateLabel: "",
-    description: "",
-    programUrl: "",
-    publishedAt: "",
-    isActive: true,
-    sortOrder: 0,
-};
 
 const emptyRubrique = {
     name: "",
@@ -61,6 +53,18 @@ const toLocalInput = (iso) => {
 };
 const toIso = (local) => (local ? new Date(local).toISOString() : null);
 
+// Liste des directs : heure de l'ordinateur, puis équivalent à Abidjan.
+const LiveSchedule = ({ iso }) => {
+    const labels = liveScheduleLabels(iso);
+    if (!labels) return "—";
+    return (
+        <>
+            <span className="block">{labels.local}</span>
+            <span className="block text-xs text-gray-500">soit {labels.abidjan}</span>
+        </>
+    );
+};
+
 const CommunicationPage = () => {
     const {
         videos,
@@ -79,6 +83,8 @@ const CommunicationPage = () => {
         createAnnouncement,
         updateAnnouncement,
         deleteAnnouncement,
+        reorderAnnouncements,
+        uploadAnnouncementImage,
         createRubrique,
         updateRubrique,
         deleteRubrique,
@@ -104,7 +110,7 @@ const CommunicationPage = () => {
                     : kind === "lives"
                       ? { ...emptyLive }
                       : kind === "announcements"
-                        ? { ...emptyAnnouncement }
+                        ? null // valeurs gérées par AnnouncementForm
                         : { ...emptyRubrique },
         });
     };
@@ -125,12 +131,7 @@ const CommunicationPage = () => {
                             scheduledAt: toLocalInput(row.scheduledAt),
                         }
                       : kind === "announcements"
-                        ? {
-                              ...emptyAnnouncement,
-                              ...row,
-                              rubriqueId: row.rubriqueId ?? "",
-                              publishedAt: toLocalInput(row.publishedAt),
-                          }
+                        ? row // pré-remplissage complet dans AnnouncementForm
                         : { ...emptyRubrique, ...row },
         });
     };
@@ -191,22 +192,6 @@ const CommunicationPage = () => {
                     isActive: data.isActive,
                 };
                 await (id ? updateLive(id, payload) : createLive(payload));
-            } else if (kind === "announcements") {
-                const payload = {
-                    title: data.title,
-                    rubriqueId: data.rubriqueId ? Number(data.rubriqueId) : null,
-                    dateLabel: data.dateLabel || undefined,
-                    description: data.description,
-                    programUrl: data.programUrl || undefined,
-                    publishedAt: data.publishedAt
-                        ? toIso(data.publishedAt)
-                        : undefined,
-                    isActive: data.isActive,
-                    sortOrder: Number(data.sortOrder) || 0,
-                };
-                await (id
-                    ? updateAnnouncement(id, payload)
-                    : createAnnouncement(payload));
             } else {
                 const payload = {
                     name: data.name,
@@ -224,6 +209,14 @@ const CommunicationPage = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    // Les erreurs remontent au formulaire d'annonce, qui les affiche.
+    const submitAnnouncement = async (payload) => {
+        await (form.id
+            ? updateAnnouncement(form.id, payload)
+            : createAnnouncement(payload));
+        setForm(null);
     };
 
     const remove = async (kind, row) => {
@@ -317,13 +310,25 @@ const CommunicationPage = () => {
             </div>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>
+                <div role="alert" className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>
             )}
 
-            {loading ? (
-                <p className="text-gray-500">Chargement…</p>
+            {/* Pendant un rechargement, le tableau reste affiché (focus clavier conservé). */}
+            {loading && rows.length === 0 ? (
+                <p role="status" className="text-gray-500">Chargement…</p>
             ) : rows.length === 0 ? (
-                <p className="text-gray-500">Aucun contenu pour le moment.</p>
+                <p className="text-gray-500">
+                    {tab === "announcements" && !error
+                        ? "Aucune annonce pour le moment. Utilisez « Ajouter une annonce » pour publier la première."
+                        : "Aucun contenu pour le moment."}
+                </p>
+            ) : tab === "announcements" ? (
+                <AnnouncementTable
+                    announcements={announcements}
+                    onEdit={(row) => openEdit("announcements", row)}
+                    onDelete={(row) => remove("announcements", row)}
+                    onReorder={reorderAnnouncements}
+                />
             ) : (
                 <div className="overflow-x-auto bg-white rounded shadow">
                     <table className="min-w-full text-sm">
@@ -338,18 +343,14 @@ const CommunicationPage = () => {
                                         : "Intervenant"}
                                 </th>
                                 <th className="text-left p-3">
-                                    {tab === "videos" || tab === "announcements"
+                                    {tab === "videos"
                                         ? "Rubrique"
                                         : tab === "lives"
-                                          ? "Diffusion"
+                                          ? "Diffusion (heure de votre ordinateur)"
                                           : "Vidéos"}
                                 </th>
                                 <th className="text-left p-3">
-                                    {tab === "rubriques"
-                                        ? "Ordre"
-                                        : tab === "announcements"
-                                          ? "Publiée le"
-                                          : "Lien"}
+                                    {tab === "rubriques" ? "Ordre" : "Lien"}
                                 </th>
                                 <th className="text-left p-3">Actif</th>
                                 <th className="text-right p-3">Actions</th>
@@ -362,10 +363,7 @@ const CommunicationPage = () => {
                                         {r.title || r.name}
                                     </td>
                                     <td className="p-3 text-gray-600">
-                                        {tab === "announcements"
-                                            ? (r.description || "").slice(0, 60) +
-                                              ((r.description || "").length > 60 ? "…" : "")
-                                            : r.speaker || r.description || "—"}
+                                        {r.speaker || r.description || "—"}
                                     </td>
                                     <td className="p-3 text-gray-600">
                                         {tab === "videos"
@@ -373,20 +371,12 @@ const CommunicationPage = () => {
                                             : tab === "lives"
                                               ? r.isLive
                                                   ? "En direct"
-                                                  : r.scheduledAt
-                                                    ? new Date(r.scheduledAt).toLocaleString("fr-FR")
-                                                    : "—"
+                                                  : <LiveSchedule iso={r.scheduledAt} />
                                               : `${r._count?.videos ?? 0} vidéo(s)`}
                                     </td>
                                     <td className="p-3">
                                         {tab === "rubriques" ? (
                                             <span className="text-gray-600">{r.sortOrder}</span>
-                                        ) : tab === "announcements" ? (
-                                            <span className="text-gray-600">
-                                                {r.publishedAt
-                                                    ? new Date(r.publishedAt).toLocaleDateString("fr-FR")
-                                                    : "—"}
-                                            </span>
                                         ) : (
                                             <a
                                                 href={r.youtubeUrl}
@@ -422,7 +412,18 @@ const CommunicationPage = () => {
                 </div>
             )}
 
-            {form && (
+            {form && form.kind === "announcements" && (
+                <AnnouncementForm
+                    key={form.id ?? "nouvelle"}
+                    announcement={form.id ? form.data : null}
+                    rubriques={rubriques}
+                    onSubmit={submitAnnouncement}
+                    onUpload={uploadAnnouncementImage}
+                    onCancel={() => setForm(null)}
+                />
+            )}
+
+            {form && form.kind !== "announcements" && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
                     <form
                         onSubmit={submit}
@@ -434,9 +435,7 @@ const CommunicationPage = () => {
                                 ? "une vidéo"
                                 : form.kind === "lives"
                                   ? "un direct"
-                                  : form.kind === "announcements"
-                                    ? "une annonce"
-                                    : "une rubrique"}
+                                  : "une rubrique"}
                         </h3>
 
                         {formError && (
@@ -629,10 +628,18 @@ const CommunicationPage = () => {
                                         <input
                                             type="datetime-local"
                                             required
+                                            aria-describedby="direct-heure-aide"
                                             className="mt-1 w-full border rounded p-2"
                                             value={form.data.scheduledAt}
                                             onChange={(e) => set("scheduledAt", e.target.value)}
                                         />
+                                        <span
+                                            id="direct-heure-aide"
+                                            aria-live="polite"
+                                            className="mt-1 block text-xs text-gray-500"
+                                        >
+                                            {liveScheduleHint(form.data.scheduledAt)}
+                                        </span>
                                     </label>
                                 )}
                             </>
