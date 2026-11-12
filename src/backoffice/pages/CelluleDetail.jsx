@@ -14,6 +14,19 @@ import {
     Search,
 } from "lucide-react";
 import { API_BASE_URL } from "../config/api";
+import { useRepartition } from "../hooks/useRepartition";
+import { EtatErreur, Squelette } from "../components/statistiques/StatsUi";
+import RepartitionTable from "../components/repartition/RepartitionTable";
+import EncartSansQuartier from "../components/repartition/EncartSansQuartier";
+import MembresQuartierModal from "../components/repartition/MembresQuartierModal";
+import {
+    TOUS,
+    filtrerParQuartier,
+    libelleLieu,
+    libelleMembres,
+    lieuDuMembre,
+    optionsQuartiers,
+} from "../utils/repartition";
 
 // Catégories d'ancienneté basées sur User.createdAt (proxy de la date
 // d'adhésion : on n'a pas de date « rejoint la cellule » distincte).
@@ -61,6 +74,13 @@ export default function CelluleDetail() {
     const [searchTerm, setSearchTerm] = useState("");
     const [seniorityBucket, setSeniorityBucket] = useState("all");
     const [sortBy, setSortBy] = useState("nom"); // nom | recent | ancien
+    // Filtre par quartier (clé de lieuDuMembre) et membres affichés dans la modale.
+    const [quartier, setQuartier] = useState(TOUS);
+    const [cibleMembres, setCibleMembres] = useState(null);
+    const repartition = useRepartition({ celluleIds: id });
+    // Le lieu n'est servi qu'à l'admin et au responsable de la cellule.
+    const lieuxVisibles = useMemo(() => users.some((u) => "zone" in u), [users]);
+    const choixQuartiers = useMemo(() => optionsQuartiers(users), [users]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -99,7 +119,7 @@ export default function CelluleDetail() {
     const filteredUsers = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
         const bucket = SENIORITY_BUCKETS.find((b) => b.value === seniorityBucket);
-        const list = users.filter((u) => {
+        const list = filtrerParQuartier(users, lieuxVisibles ? quartier : TOUS).filter((u) => {
             if (term) {
                 const haystack = [u.nom, u.prenom, u.email, u.phoneNumber]
                     .filter(Boolean)
@@ -124,7 +144,7 @@ export default function CelluleDetail() {
             });
         }
         return list;
-    }, [users, searchTerm, seniorityBucket, sortBy]);
+    }, [users, searchTerm, seniorityBucket, sortBy, quartier, lieuxVisibles]);
 
     if (loading) {
         return <div className="p-6 text-center text-blue-600">Chargement…</div>;
@@ -229,6 +249,62 @@ export default function CelluleDetail() {
                 </div>
             </section>
 
+            {/* Répartition des membres par quartier (masquée sans droit) */}
+            {!repartition.interdit && (
+                <section
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 py-5"
+                    aria-labelledby="titre-repartition-cellule"
+                >
+                    <h2
+                        id="titre-repartition-cellule"
+                        className="px-6 text-lg font-semibold text-gray-900 flex items-center"
+                    >
+                        <MapPin className="w-5 h-5 mr-2 text-blue-600" aria-hidden="true" />
+                        Répartition par quartier
+                    </h2>
+                    <div className="mt-4 px-6">
+                        {repartition.loading && !repartition.data ? (
+                            <Squelette lignes={3} />
+                        ) : repartition.error ? (
+                            <EtatErreur message={repartition.error} onReessayer={repartition.recharger} />
+                        ) : !repartition.data ? null : repartition.data.totalMembres === 0 ? (
+                            <p className="py-6 text-center text-sm text-gray-500">
+                                Aucun membre dans cette cellule.
+                            </p>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                                <div className="lg:col-span-2 -mx-3">
+                                    {repartition.data.avecQuartier === 0 &&
+                                    repartition.data.sansQuartier.communeSeule === 0 ? (
+                                        <p className="px-3 py-6 text-sm text-gray-500">
+                                            Aucun membre de cette cellule n'a encore renseigné son quartier.
+                                        </p>
+                                    ) : (
+                                        <RepartitionTable
+                                            pays={repartition.data.pays}
+                                            total={repartition.data.totalMembres}
+                                            onVoirMembres={(c) => setCibleMembres(c)}
+                                            legende={`Membres de la cellule ${cellule.name} par pays, commune et quartier`}
+                                        />
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="mb-2 text-sm text-gray-600">
+                                        {libelleMembres(repartition.data.totalMembres)}, dont{" "}
+                                        {repartition.data.avecQuartier} avec un quartier.
+                                    </p>
+                                    <EncartSansQuartier
+                                        sansQuartier={repartition.data.sansQuartier}
+                                        total={repartition.data.totalMembres}
+                                        onVoirMembres={(c) => setCibleMembres(c)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
             {/* Liste des utilisateurs */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -252,7 +328,7 @@ export default function CelluleDetail() {
                     </div>
 
                     {/* Filtres */}
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className={`mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 ${lieuxVisibles ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -275,6 +351,22 @@ export default function CelluleDetail() {
                                 </option>
                             ))}
                         </select>
+                        {lieuxVisibles && (
+                            <select
+                                value={quartier}
+                                onChange={(e) => setQuartier(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                title="Filtrer par quartier"
+                                aria-label="Filtrer par quartier"
+                            >
+                                <option value={TOUS}>Tous les quartiers</option>
+                                {choixQuartiers.map((o) => (
+                                    <option key={o.cle} value={o.cle}>
+                                        {o.nom} ({o.membres})
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
@@ -349,6 +441,15 @@ export default function CelluleDetail() {
                                                     {u.phoneNumber}
                                                 </span>
                                             )}
+                                            {lieuxVisibles && (
+                                                <span
+                                                    className={`inline-flex items-center min-w-0 max-w-full ${u.zone?.type === "QUARTIER" ? "" : "italic"}`}
+                                                >
+                                                    <MapPin className="w-3 h-3 mr-1 flex-shrink-0" aria-hidden="true" />
+                                                    <span className="sr-only">Quartier : </span>
+                                                    <span className="truncate">{libelleLieu(lieuDuMembre(u))}</span>
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -365,6 +466,12 @@ export default function CelluleDetail() {
                     </ul>
                 )}
             </section>
+
+            <MembresQuartierModal
+                cible={cibleMembres}
+                celluleIds={id}
+                onFermer={() => setCibleMembres(null)}
+            />
         </div>
     );
 }
