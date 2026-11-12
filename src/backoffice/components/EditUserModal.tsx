@@ -3,6 +3,8 @@ import { X, User, Mail, Phone, Globe, MapPin, Shield } from "lucide-react";
 import { User as UserType } from "../types/user";
 import { usePays } from "../hooks/usePays";
 import { useCellules } from "../hooks/useCellules";
+import QuartierResidenceField from "./referentiel/QuartierResidenceField";
+import { corpsLieu, lieuUtilisateur, quartierUtilisateur } from "../utils/referentiel";
 
 type EditUserModalProps = {
     user: UserType;
@@ -29,6 +31,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    // Quartier de résidence : celui du membre au départ, envoyé seulement s'il change.
+    const quartierInitial = quartierUtilisateur(user);
+    const [quartier, setQuartier] = useState<any>(quartierInitial);
+    const communeSeule = !quartierInitial ? lieuUtilisateur(user)?.commune?.nom : "";
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -93,17 +99,16 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             dataToSend.celluleId = formData.celluleId;
         }
 
-        console.log("Données de modification envoyées:", dataToSend); // Pour debug
+        // Quartier de résidence : absent du corps s'il n'a pas changé.
+        Object.assign(dataToSend, corpsLieu(quartier, quartierInitial));
 
         setIsLoading(true);
         try {
             await onSave(dataToSend);
             onClose();
         } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                    "Erreur lors de la modification de l'utilisateur"
-            );
+            // Message du serveur affiché tel quel (quartier inconnu, email déjà pris…).
+            setError(err?.message || "Erreur lors de la modification de l'utilisateur");
         } finally {
             setIsLoading(false);
         }
@@ -214,6 +219,29 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                                     ))}
                             </select>
                         </div>
+
+                        <QuartierResidenceField
+                            value={quartier}
+                            onChange={setQuartier}
+                            creation
+                            aide={
+                                communeSeule
+                                    ? `Actuellement : ${communeSeule} (commune seule, sans quartier).`
+                                    : "Tapez le nom du quartier, puis choisissez-le dans la liste."
+                            }
+                        />
+                        {quartierInitial && !quartier && (
+                            <p role="status" className="-mt-2 text-sm text-amber-800">
+                                Le lieu de résidence ({quartierInitial.nom}) sera effacé à l'enregistrement.{" "}
+                                <button
+                                    type="button"
+                                    onClick={() => setQuartier(quartierInitial)}
+                                    className="font-medium underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                >
+                                    Rétablir
+                                </button>
+                            </p>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">

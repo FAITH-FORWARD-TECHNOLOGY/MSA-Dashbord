@@ -25,6 +25,8 @@ const navigation = [
             { name: "Utilisateurs", href: "/users" },
             { name: "Cellules", href: "/cellules" },
             { name: "Membres par quartier", href: "/membres-par-quartier", adminOnly: true },
+            { name: "Communes", href: "/communes", adminOnly: true },
+            { name: "Quartiers", href: "/quartiers", adminOnly: true },
             { name: "Statistiques", href: "/statistiques" },
             { name: "Export des données", href: "/export-donnees", adminOnly: true },
         ],

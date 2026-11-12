@@ -63,7 +63,7 @@ export default function MembresParQuartierPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Membres par quartier</h1>
                     <p className="mt-1 text-sm text-gray-600">
-                        Où habitent les membres, par pays, commune et quartier, et qui n'a pas encore renseigné son quartier.
+                        Où habitent les membres actifs, par pays, commune et quartier, et qui n'a pas encore renseigné son quartier. Les comptes désactivés ne sont pas comptés.
                     </p>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:items-end">
@@ -126,7 +126,7 @@ export default function MembresParQuartierPage() {
                 <div className={`space-y-5 ${loading ? "opacity-60" : ""}`} aria-busy={loading}>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <Carte
-                            titre="Membres"
+                            titre="Membres actifs"
                             valeur={data.totalMembres}
                             detail={paysChoisi ? paysChoisi.nom : "Tous les pays"}
                         />
@@ -145,7 +145,7 @@ export default function MembresParQuartierPage() {
                     {data.totalMembres === 0 ? (
                         <EtatVide
                             titre="Aucun membre"
-                            message={paysId === "" ? "Aucun compte n'est encore enregistré." : "Aucun membre n'habite dans ce pays."}
+                            message={paysId === "" ? "Aucun compte actif n'est enregistré." : "Aucun membre actif n'habite dans ce pays."}
                         />
                     ) : (
                         <section className="rounded-xl border border-gray-200 bg-white py-4 shadow-sm" aria-labelledby="titre-repartition">
@@ -159,7 +159,7 @@ export default function MembresParQuartierPage() {
                                 pays={data.pays}
                                 total={data.totalMembres}
                                 onVoirMembres={(c) => setCible(c)}
-                                legende="Nombre de membres par pays, commune et quartier"
+                                legende="Nombre de membres actifs par pays, commune et quartier"
                             />
                         </section>
                     )}

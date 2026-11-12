@@ -13,6 +13,8 @@ import { Cellule, Pays } from "../types/user";
 import { useUsers } from "../hooks/useUsers";
 import { usePays } from "../hooks/usePays";
 import { useCellules } from "../hooks/useCellules";
+import QuartierResidenceField from "./referentiel/QuartierResidenceField";
+import { corpsLieu } from "../utils/referentiel";
 
 type UserFormModalProps = {
     onClose: () => void;
@@ -39,6 +41,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    // Quartier de résidence choisi ({ id, nom, commune }) ou null.
+    const [quartier, setQuartier] = useState<any>(null);
 
     // Initialiser les valeurs par défaut quand les données sont chargées
     useEffect(() => {
@@ -118,6 +122,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         ) {
             dataToSend.celluleId = formData.celluleId;
         }
+
+        // Quartier de résidence (facultatif).
+        Object.assign(dataToSend, corpsLieu(quartier));
 
         // Tout compte créé depuis le dashboard admin est activé directement —
         // pas de flow de confirmation email à passer comme pour le signup public.
@@ -290,6 +297,13 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                                     ))}
                             </select>
                         </div>
+
+                        <QuartierResidenceField
+                            value={quartier}
+                            onChange={setQuartier}
+                            creation
+                            aide="Facultatif. Tapez le nom du quartier, puis choisissez-le dans la liste."
+                        />
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">

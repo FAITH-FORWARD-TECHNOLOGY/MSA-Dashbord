@@ -84,6 +84,21 @@ const router = createBrowserRouter([
                         (m) => ({ Component: m.default })
                     ),
             },
+            // Référentiel des lieux (admin) : communes et quartiers, chargés à la demande.
+            {
+                path: "communes",
+                lazy: () =>
+                    import("./backoffice/pages/CommunesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
+            {
+                path: "quartiers",
+                lazy: () =>
+                    import("./backoffice/pages/QuartiersPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             // Route "/destinations" → CRUD covoiturage (lien dans le Header).
             {
                 path: "destinations",

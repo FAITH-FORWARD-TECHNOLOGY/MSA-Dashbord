@@ -14,7 +14,9 @@ import {
     Download,
     Phone,
     Users as UsersIcon,
+    Home,
 } from "lucide-react";
+import { libelleLieuUtilisateur, lieuUtilisateur } from "../utils/referentiel";
 import EditUserModal from "./EditUserModal";
 
 type UserListProps = {
@@ -22,6 +24,8 @@ type UserListProps = {
     onUpdate: (id: number, data: any) => void;
     onDelete: (id: number) => void;
     onView?: (id: number) => void;
+    // Vrai quand la liste est restreinte par le filtre « Quartier ».
+    filtreActif?: boolean;
 };
 
 // Construit la liste compacte de pages à afficher dans la pagination.
@@ -53,12 +57,14 @@ const UserList: React.FC<UserListProps> = ({
     onUpdate,
     onDelete,
     onView,
+    filtreActif = false,
 }) => {
     const navigate = useNavigate();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     // États pour la recherche et pagination
     const [searchTerm, setSearchTerm] = useState("");
@@ -81,6 +87,7 @@ const UserList: React.FC<UserListProps> = ({
             (user?.pays?.nom || "").toLowerCase().includes(q) ||
             (user?.cellule?.name || "").toLowerCase().includes(q) ||
             (user?.cellule?.code || "").toLowerCase().includes(q) ||
+            libelleLieuUtilisateur(user).toLowerCase().includes(q) ||
             phone.includes(qDigits)
         );
     });
@@ -112,6 +119,8 @@ const UserList: React.FC<UserListProps> = ({
                 "Code Pays": user.pays?.code || "N/A",
                 Cellule: (user as any).cellule?.name || "N/A",
                 "Code Cellule": (user as any).cellule?.code || "N/A",
+                Quartier: lieuUtilisateur(user)?.quartier?.nom || "N/A",
+                Commune: lieuUtilisateur(user)?.commune?.nom || "N/A",
                 "Date de création": user.createdAt
                     ? new Date(user.createdAt).toLocaleDateString("fr-FR")
                     : "N/A",
@@ -164,6 +173,7 @@ const UserList: React.FC<UserListProps> = ({
 
     const handleDelete = (user: User) => {
         setSelectedUser(user);
+        setDeleteError("");
         setIsDeleteModalOpen(true);
     };
 
@@ -175,8 +185,9 @@ const UserList: React.FC<UserListProps> = ({
             await onDelete(selectedUser.id);
             setIsDeleteModalOpen(false);
             setSelectedUser(null);
-        } catch (error) {
-            console.error("Erreur lors de la suppression:", error);
+        } catch (error: any) {
+            // Message du serveur affiché dans la modale de confirmation.
+            setDeleteError(error?.message || "Erreur lors de la suppression");
         } finally {
             setIsLoading(false);
         }
@@ -225,7 +236,9 @@ const UserList: React.FC<UserListProps> = ({
                         Aucun utilisateur
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                        Commencez par créer un nouvel utilisateur.
+                        {filtreActif
+                            ? "Aucun utilisateur ne correspond à ce quartier."
+                            : "Commencez par créer un nouvel utilisateur."}
                     </p>
                 </div>
             ) : filteredUsers.length === 0 ? (
@@ -303,6 +316,21 @@ const UserList: React.FC<UserListProps> = ({
                                                                 {user.pays.nom}
                                                             </p>
                                                         )}
+                                                        {/* Quartier de résidence (ou commune seule). */}
+                                                        <p className="flex items-center text-sm text-gray-500 min-w-0 max-w-full">
+                                                            <Home className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" aria-hidden="true" />
+                                                            <span className="sr-only">Quartier : </span>
+                                                            {libelleLieuUtilisateur(user) ? (
+                                                                <span className="truncate">{libelleLieuUtilisateur(user)}</span>
+                                                            ) : (
+                                                                <span className="italic text-gray-400">Quartier non renseigné</span>
+                                                            )}
+                                                            {lieuUtilisateur(user)?.quartier?.statut === "A_VALIDER" && (
+                                                                <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                                                                    En attente
+                                                                </span>
+                                                            )}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -464,6 +492,11 @@ const UserList: React.FC<UserListProps> = ({
                                     ? Cette action ne peut pas être annulée.
                                 </p>
                             </div>
+                            {deleteError && (
+                                <p role="alert" className="px-4 text-sm text-red-600">
+                                    {deleteError}
+                                </p>
+                            )}
                             <div className="flex gap-3 px-4 py-3">
                                 <button
                                     onClick={() => {
