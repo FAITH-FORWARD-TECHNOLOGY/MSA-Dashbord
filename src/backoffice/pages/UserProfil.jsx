@@ -1,9 +1,11 @@
 import ActivityDetailModal from "../components/Activitydetail";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Edit2, Trash2, Power, PowerOff } from "lucide-react";
+import { Edit2, Trash2, Power, PowerOff, KeyRound } from "lucide-react";
 import AddActivityModal from "../components/AddActivityForm";
 import EditUserModal from "../components/EditUserModal";
+import MotDePasseModal from "../components/MotDePasseModal";
+import { useAuth } from "../hooks/useAuth";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
 import { libelleLieuUtilisateur } from "../utils/referentiel";
@@ -22,6 +24,8 @@ export default function UserProfil() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isToggleOpen, setIsToggleOpen] = useState(false);
+    const [isMdpOpen, setIsMdpOpen] = useState(false);
+    const { user: moi } = useAuth();
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState("");
 
@@ -185,6 +189,8 @@ export default function UserProfil() {
         return <div className="p-6 text-center">Utilisateur non trouvé</div>;
 
     const isActive = user.isActive !== false;
+    // Admin seulement, et jamais sur son propre compte (il passe par Mon profil).
+    const peutChangerMdp = moi?.role === "ADMIN" && Number(moi?.id) !== Number(user.id);
 
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -243,6 +249,16 @@ export default function UserProfil() {
                             <Edit2 className="w-4 h-4 mr-1.5" />
                             Modifier
                         </button>
+                        {peutChangerMdp && (
+                            <button
+                                type="button"
+                                onClick={() => setIsMdpOpen(true)}
+                                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                <KeyRound className="w-4 h-4 mr-1.5" aria-hidden="true" />
+                                Modifier le mot de passe
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsToggleOpen(true)}
                             className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
@@ -484,6 +500,14 @@ export default function UserProfil() {
                     user={user}
                     onClose={() => setIsEditOpen(false)}
                     onSave={handleSaveEdit}
+                />
+            )}
+
+            {/* Mot de passe défini par l'admin */}
+            {peutChangerMdp && (
+                <MotDePasseModal
+                    utilisateur={isMdpOpen ? user : null}
+                    onFermer={() => setIsMdpOpen(false)}
                 />
             )}
 
