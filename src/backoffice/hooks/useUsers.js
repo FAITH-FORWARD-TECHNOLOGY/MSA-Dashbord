@@ -1,5 +1,26 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, authHeaders, handleUnauthorized } from '../config/api';
+
+// Mot de passe défini par un admin ; le membre est déconnecté de tous ses appareils.
+export async function definirMotDePasse(userId, newPassword) {
+    let res;
+    try {
+        res = await fetch(`${API_BASE_URL}/users/${userId}/password`, {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ newPassword }),
+        });
+    } catch {
+        throw Object.assign(new Error('Connexion au serveur impossible. Vérifiez votre réseau, puis réessayez.'), { statut: 0 });
+    }
+    if (handleUnauthorized(res)) throw Object.assign(new Error('Session expirée. Reconnectez-vous.'), { statut: 401 });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const message = Array.isArray(body?.message) ? body.message.join(' ; ') : body?.message;
+        throw Object.assign(new Error(message || `Erreur ${res.status}`), { statut: res.status });
+    }
+    return res.json();
+}
 
 export function useUsers() {
     const [users, setUsers] = useState([]);
