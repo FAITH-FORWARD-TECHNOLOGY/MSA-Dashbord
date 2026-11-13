@@ -189,8 +189,9 @@ export default function UserProfil() {
         return <div className="p-6 text-center">Utilisateur non trouvé</div>;
 
     const isActive = user.isActive !== false;
-    // Admin seulement, et jamais sur son propre compte (il passe par Mon profil).
-    const peutChangerMdp = moi?.role === "ADMIN" && Number(moi?.id) !== Number(user.id);
+    // Admin seulement, sur la fiche d'un membre : ni son propre compte ni celui d'un autre admin.
+    const peutChangerMdp =
+        moi?.role === "ADMIN" && Number(moi?.id) !== Number(user.id) && user.role !== "ADMIN";
 
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-8">

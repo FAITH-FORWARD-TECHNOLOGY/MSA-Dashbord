@@ -1,6 +1,8 @@
 // Mot de passe défini par un admin : mêmes règles que le serveur (PATCH /users/:id/password).
 export const MDP_MIN = 8;
-export const MDP_MAX = 128;
+// bcrypt ignore tout ce qui dépasse 72 octets.
+export const MDP_OCTETS_MAX = 72;
+const LIMITE = `${MDP_OCTETS_MAX} octets au plus (environ ${MDP_OCTETS_MAX} caractères sans accents)`;
 export const LONGUEUR_GENEREE = 16;
 
 // Jeux de caractères du générateur, sans les caractères ambigus (0/O, 1/l/I).
@@ -10,13 +12,16 @@ export const CHIFFRES = "23456789";
 export const SYMBOLES = "!@#$%&*+-=?_";
 const JEUX = [MINUSCULES, MAJUSCULES, CHIFFRES, SYMBOLES];
 
+// Taille en octets UTF-8, comme la compte le serveur.
+export const octets = (v = "") => new TextEncoder().encode(v).length;
+
 // Règles affichées dans la modale, avec leur état pour la saisie courante.
 export function reglesMotDePasse(mdp = "", confirmation = "") {
     return [
         {
             id: "longueur",
-            libelle: `${MDP_MIN} à ${MDP_MAX} caractères`,
-            ok: mdp.length >= MDP_MIN && mdp.length <= MDP_MAX,
+            libelle: `${MDP_MIN} caractères au moins, ${LIMITE}`,
+            ok: mdp.length >= MDP_MIN && octets(mdp) <= MDP_OCTETS_MAX,
         },
         {
             id: "identiques",
@@ -31,7 +36,7 @@ export function erreursMotDePasse(mdp = "", confirmation = "") {
     let champ = "";
     if (!mdp) champ = "Saisissez un mot de passe.";
     else if (mdp.length < MDP_MIN) champ = `Au moins ${MDP_MIN} caractères.`;
-    else if (mdp.length > MDP_MAX) champ = `Au plus ${MDP_MAX} caractères.`;
+    else if (octets(mdp) > MDP_OCTETS_MAX) champ = `Mot de passe trop long : ${LIMITE}.`;
     let conf = "";
     if (!confirmation) conf = "Confirmez le mot de passe.";
     else if (confirmation !== mdp) conf = "Les deux saisies ne sont pas identiques.";
@@ -57,7 +62,7 @@ function tirerIndex(taille, aleatoire) {
 
 // Mot de passe aléatoire : au moins un caractère de chaque jeu, positions mélangées.
 export function genererMotDePasse(longueur = LONGUEUR_GENEREE, aleatoire = aleatoireNavigateur) {
-    const n = Math.min(Math.max(longueur, Math.max(MDP_MIN, JEUX.length)), MDP_MAX);
+    const n = Math.min(Math.max(longueur, Math.max(MDP_MIN, JEUX.length)), MDP_OCTETS_MAX);
     const tous = JEUX.join("");
     const car = JEUX.map((jeu) => jeu[tirerIndex(jeu.length, aleatoire)]);
     while (car.length < n) car.push(tous[tirerIndex(tous.length, aleatoire)]);

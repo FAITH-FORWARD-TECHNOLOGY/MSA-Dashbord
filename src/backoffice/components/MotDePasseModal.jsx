@@ -3,7 +3,7 @@ import { AlertTriangle, Check, CheckCircle2, Copy, Eye, EyeOff, Loader2, Wand2, 
 import { AlerteErreur, BOUTON_PRIMAIRE, BOUTON_SECONDAIRE, CHAMP, Champ, Modale } from "./referentiel/ReferentielUi";
 import { FOCUS } from "./statistiques/StatsUi";
 import { definirMotDePasse } from "../hooks/useUsers";
-import { erreursMotDePasse, genererMotDePasse, MDP_MAX, reglesMotDePasse } from "../utils/motDePasse";
+import { erreursMotDePasse, genererMotDePasse, MDP_OCTETS_MAX, reglesMotDePasse } from "../utils/motDePasse";
 
 const PIED = "flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end";
 
@@ -43,7 +43,7 @@ function ChampMotDePasse({
                     className={`${CHAMP} pr-28 font-mono`}
                     value={valeur}
                     onChange={(e) => onChange(e.target.value)}
-                    maxLength={MDP_MAX + 1}
+                    maxLength={MDP_OCTETS_MAX + 1}
                     autoComplete="new-password"
                     autoCapitalize="off"
                     autoCorrect="off"
