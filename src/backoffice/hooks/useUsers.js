@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../config/api';
 import { chaineRequete } from '../components/statistiques/cellulesFiltre';
+import { appelApi } from './useReferentiel';
 
 // Message d'erreur NestJS : chaîne, ou tableau pour les 400 de validation.
 const texteMessage = (body) =>
     Array.isArray(body?.message) ? body.message.join(' ; ') : body?.message;
+
+// Mot de passe défini par un admin ; le membre est déconnecté de tous ses appareils.
+export function definirMotDePasse(userId, newPassword) {
+    return appelApi(`/users/${userId}/password`, { methode: 'PATCH', corps: { newPassword } });
+}
 
 // `filtres` : paramètres de GET /users (quartierId, sansQuartier) ; {} = tous.
 export function useUsers(filtres) {
