@@ -74,7 +74,7 @@ function Avertissement() {
     return (
         <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <p>Le membre sera déconnecté de tous ses appareils.</p>
+            <p>L'utilisateur sera déconnecté de tous ses appareils.</p>
         </div>
     );
 }
@@ -238,7 +238,7 @@ function Contenu({ utilisateur, onFermer, setBloquee }) {
                 >
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                     <p>
-                        Mot de passe de <span className="font-medium">{nom}</span> modifié. Le membre a été déconnecté
+                        Mot de passe de <span className="font-medium">{nom}</span> modifié. L'utilisateur a été déconnecté
                         de tous ses appareils : communiquez-lui son nouveau mot de passe par un moyen sûr.
                     </p>
                 </div>
