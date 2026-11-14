@@ -5,6 +5,7 @@ import { Edit2, Trash2, Power, PowerOff, KeyRound } from "lucide-react";
 import AddActivityModal from "../components/AddActivityForm";
 import EditUserModal from "../components/EditUserModal";
 import MotDePasseModal from "../components/MotDePasseModal";
+import BoutonRetour from "../components/BoutonRetour";
 import { useAuth } from "../hooks/useAuth";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
@@ -182,11 +183,16 @@ export default function UserProfil() {
         }
     };
 
-    if (loading) return <div className="p-6 text-center">Chargement...</div>;
-    if (error)
-        return <div className="p-6 text-center text-red-600">{error}</div>;
-    if (!user)
-        return <div className="p-6 text-center">Utilisateur non trouvé</div>;
+    // Bouton Retour présent aussi pendant le chargement et en cas d'erreur.
+    const etat = (contenu, classe = "") => (
+        <div className="p-6 max-w-6xl mx-auto space-y-4">
+            <BoutonRetour repli="/users" />
+            <div className={`text-center ${classe}`}>{contenu}</div>
+        </div>
+    );
+    if (loading) return etat("Chargement...");
+    if (error) return etat(error, "text-red-600");
+    if (!user) return etat("Utilisateur non trouvé");
 
     const isActive = user.isActive !== false;
     // Admin seulement, sur la fiche d'un membre ou d'un autre admin ; jamais son propre compte (Mon profil).
@@ -195,6 +201,8 @@ export default function UserProfil() {
 
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-8">
+            <BoutonRetour repli="/users" />
+
             {/* Infos utilisateur + actions */}
             <section className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap">

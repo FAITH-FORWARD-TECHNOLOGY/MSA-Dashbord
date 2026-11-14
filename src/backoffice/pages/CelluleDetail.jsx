@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-    ArrowLeft,
     MapPin,
     Phone,
     Clock,
@@ -14,6 +13,7 @@ import {
     Search,
 } from "lucide-react";
 import { API_BASE_URL } from "../config/api";
+import BoutonRetour from "../components/BoutonRetour";
 import { useRepartition } from "../hooks/useRepartition";
 import { EtatErreur, Squelette } from "../components/statistiques/StatsUi";
 import RepartitionTable from "../components/repartition/RepartitionTable";
@@ -172,15 +172,7 @@ export default function CelluleDetail() {
 
     return (
         <div className="p-4 max-w-6xl mx-auto space-y-6">
-            {/* Retour */}
-            <button
-                type="button"
-                onClick={() => navigate("/cellules")}
-                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
-            >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Retour à la liste des cellules
-            </button>
+            <BoutonRetour repli="/cellules" />
 
             {/* Infos cellule */}
             <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
