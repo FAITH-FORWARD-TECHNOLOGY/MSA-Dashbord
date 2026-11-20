@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { BIBLE_BOOKS } from "../config/bibleBooks";
 import AnnouncementImageField from "./AnnouncementImageField";
 import { uploadImage } from "../utils/uploadImage";
+import { usePermissions } from "../hooks/usePermissions";
 import { buildPlanPayload } from "../utils/readingPlans";
 
 const SCOPES = [
@@ -18,6 +19,9 @@ const labelCls = "block text-sm font-medium text-gray-700 mb-1 mt-3";
 // Modal de creation / edition d'un plan de lecture (back-office).
 export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
     const isEdit = !!plan;
+    // Envoi d'image : même permission que l'action du formulaire (création ou modification).
+    const { peut } = usePermissions();
+    const peutImage = peut(plan ? "bo.plans.modifier" : "bo.plans.creer");
     const [title, setTitle] = useState(plan?.title ?? "");
     const [imageUrl, setImageUrl] = useState(plan?.imageUrl ?? "");
     const [scope, setScope] = useState(plan?.scope ?? "WHOLE");
@@ -87,7 +91,7 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
                             onChange={setImageUrl}
                             onUpload={uploadImage}
                             onBusyChange={setUploading}
-                            disabled={busy}
+                            disabled={busy || !peutImage}
                             describedBy="plan-imageUrl-aide"
                         />
                         <p id="plan-imageUrl-aide" className="mt-1 text-xs text-gray-500">

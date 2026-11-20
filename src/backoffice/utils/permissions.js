@@ -33,6 +33,7 @@ const RESERVES_ADMIN = [
     "bo.quartiers.",
     "bo.export_donnees.",
     "bo.utilisateurs.mot_de_passe",
+    "bo.prieres.",
 ];
 
 const estReserveAdmin = (code) => RESERVES_ADMIN.some((p) => code.startsWith(p));

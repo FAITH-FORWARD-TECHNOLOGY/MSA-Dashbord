@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Pencil, X } from "lucide-react";
 import { usePrayerCategories } from "../hooks/usePrayerCategories";
+import { usePermissions } from "../hooks/usePermissions";
 import { Squelette } from "../components/statistiques/StatsUi";
 import { moveId } from "../utils/announcements";
 import {
@@ -25,6 +26,10 @@ const PrayerCategoriesPage = () => {
         categories, jours, loading, error,
         recharger, creer, modifier, reordonner, enregistrerJours,
     } = usePrayerCategories();
+
+    // Lecture avec `bo.prieres.voir` (la route) ; modifications avec `bo.prieres.gerer`.
+    const { peut } = usePermissions();
+    const peutGerer = peut("bo.prieres.gerer");
 
     const [nouveau, setNouveau] = useState("");
     const [editId, setEditId] = useState(null);
@@ -150,11 +155,13 @@ const PrayerCategoriesPage = () => {
                             aria-invalid={erreurJours ? "true" : "false"}
                             aria-describedby="prieres-jours-aide"
                             className={`w-32 ${inputClass}`}
-                            disabled={!delaiOk}
+                            disabled={!delaiOk || !peutGerer}
                         />
-                        <button type="submit" className={primaryBtn} disabled={busy || !delaiOk || Boolean(erreurJours)}>
-                            Enregistrer
-                        </button>
+                        {peutGerer && (
+                            <button type="submit" className={primaryBtn} disabled={busy || !delaiOk || Boolean(erreurJours)}>
+                                Enregistrer
+                            </button>
+                        )}
                     </div>
                 </form>
                 {!loading && jours === null && (
@@ -175,6 +182,7 @@ const PrayerCategoriesPage = () => {
                     Catégories
                 </h3>
 
+                {peutGerer && (
                 <form onSubmit={ajouter} className="mb-5">
                     <label htmlFor="prieres-nouvelle" className="block text-sm font-medium text-gray-700 mb-1">
                         Nouvelle catégorie
@@ -201,6 +209,7 @@ const PrayerCategoriesPage = () => {
                         </p>
                     )}
                 </form>
+                )}
 
                 {loading && <Squelette lignes={3} />}
                 {error && !loading && (
@@ -272,6 +281,7 @@ const PrayerCategoriesPage = () => {
                                     >
                                         {c.actif ? "Active" : "Désactivée"}
                                     </span>
+                                    {peutGerer && (
                                     <div className="whitespace-nowrap">
                                         <button type="button" className={iconBtn} onClick={() => deplacer(c, -1)}
                                             disabled={busy || index === 0}
@@ -297,6 +307,7 @@ const PrayerCategoriesPage = () => {
                                             {c.actif ? "Désactiver" : "Activer"}
                                         </button>
                                     </div>
+                                    )}
                                 </li>
                             );
                         })}

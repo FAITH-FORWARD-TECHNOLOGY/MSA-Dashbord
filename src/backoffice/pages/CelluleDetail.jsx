@@ -13,7 +13,7 @@ import {
     Search,
 } from "lucide-react";
 import { API_BASE_URL } from "../config/api";
-import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import BoutonRetour from "../components/BoutonRetour";
 import DeplacerMembresModal from "../components/DeplacerMembresModal";
 import { useRepartition } from "../hooks/useRepartition";
@@ -27,7 +27,6 @@ import {
     estResponsable,
     libelleResultat,
     libelleSelection,
-    peutDeplacer,
     purgerSelection,
     toutEstSelectionne,
 } from "../utils/deplacement";
@@ -78,8 +77,9 @@ const DAYS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "D
 export default function CelluleDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
-    const estAdmin = peutDeplacer(user);
+    const { peutNouveau } = usePermissions();
+    // Déplacement : `bo.cellules.modifier` (repli ancien serveur : ADMIN).
+    const estAdmin = peutNouveau("bo.cellules.modifier");
 
     const [cellule, setCellule] = useState(null);
     const [users, setUsers] = useState([]);
