@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { uploadImage } from '../utils/uploadImage';
 
 // Hook CRUD du module Communication (médiathèque + directs).
 // Les contenus ne viennent pas de l'API YouTube : chaque entrée porte
@@ -32,26 +33,8 @@ export function useCommunication() {
         };
     };
 
-    // Envoi d'une image d'annonce sur le backend MSA ; renvoie son URL.
-    // Pas de Content-Type : le navigateur pose la frontière multipart.
-    const uploadAnnouncementImage = async (file) => {
-        const body = new FormData();
-        body.append('file', file);
-        const token = authToken();
-        const response = await fetch(`${API_BASE_URL}/communication/admin/uploads`, {
-            method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            body,
-        });
-        const result = await response.json().catch(() => ({}));
-        if (response.status === 413) {
-            throw new Error('Image trop lourde : 5 Mo maximum.');
-        }
-        if (!response.ok || !result.url) {
-            throw new Error(result.message || `Échec de l'envoi (erreur ${response.status})`);
-        }
-        return result.url;
-    };
+    // Envoi d'une image d'annonce : route partagée (voir utils/uploadImage.js).
+    const uploadAnnouncementImage = uploadImage;
 
     const request = async (path, options = {}) => {
         const response = await fetch(`${API_BASE_URL}/communication/admin${path}`, {

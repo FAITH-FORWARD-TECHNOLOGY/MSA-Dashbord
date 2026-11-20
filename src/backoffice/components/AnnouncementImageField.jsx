@@ -5,9 +5,12 @@ import { validateImageFile } from "../utils/announcements";
 const buttonClass =
     "inline-flex items-center gap-2 px-3 py-2 rounded border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50";
 
-// Image d'une annonce : envoi sur le backend MSA, aperçu, remplacement, retrait.
+// Image (annonce, plan de lecture…) : envoi sur le backend MSA, aperçu, remplacement, retrait.
 // `value` = URL renvoyée par le serveur ; `onUpload(file)` renvoie cette URL.
+// `id` = identifiant du bouton (cible du libellé) ; `previewAlt` = texte alternatif de l'aperçu.
 function AnnouncementImageField({
+    id = "annonce-imageUrl",
+    previewAlt = "Aperçu de l’image de l’annonce",
     value,
     onChange,
     onUpload,
@@ -71,7 +74,7 @@ function AnnouncementImageField({
                 <div className="relative mt-1 mb-2 rounded border border-gray-200 bg-gray-50 overflow-hidden">
                     <img
                         src={preview}
-                        alt="Aperçu de l’image de l’annonce"
+                        alt={previewAlt}
                         className="w-full max-h-56 object-contain"
                     />
                     {uploading && (
@@ -84,7 +87,7 @@ function AnnouncementImageField({
             <div className="flex flex-wrap gap-2 mt-1">
                 <button
                     type="button"
-                    id="annonce-imageUrl"
+                    id={id}
                     ref={chooseRef}
                     className={buttonClass}
                     // aria-disabled pendant l'envoi : le bouton garde le focus clavier.
