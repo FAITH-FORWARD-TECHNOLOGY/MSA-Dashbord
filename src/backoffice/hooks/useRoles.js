@@ -57,3 +57,10 @@ export function useCellulesNoms(actif) {
     const { data } = useChargement(() => appelApi("/cellules/all"), "cellules-noms", actif);
     return new Map((data?.data ?? []).map((c) => [Number(c.id), c.name]));
 }
+
+// Comptes super admin (filtre « Acteur » du journal) : rôle super admin du back-office, puis ses comptes.
+export function useActeursJournal(roles) {
+    const sa = (roles ?? []).find((r) => r.superAdmin);
+    const { data } = useChargement(() => appelApi(`/users${chaineRequete({ roleId: sa.id })}`), `acteurs:${sa?.id}`, Boolean(sa));
+    return Array.isArray(data) ? data : [];
+}

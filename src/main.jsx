@@ -140,6 +140,13 @@ const router = createBrowserRouter([
                     ),
             },
             {
+                path: "journal",
+                lazy: () =>
+                    import("./backoffice/pages/JournalPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
+            {
                 path: "login",
                 element: <LoginForm />,
             },
