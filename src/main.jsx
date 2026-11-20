@@ -124,6 +124,21 @@ const router = createBrowserRouter([
                 path: "communication",
                 element: <CommunicationPage />,
             },
+            // Rôles et permissions (super admin), chargés à la demande.
+            {
+                path: "roles",
+                lazy: () =>
+                    import("./backoffice/pages/RolesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
+            {
+                path: "roles/:id",
+                lazy: () =>
+                    import("./backoffice/pages/RolePermissionsPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             {
                 path: "login",
                 element: <LoginForm />,
