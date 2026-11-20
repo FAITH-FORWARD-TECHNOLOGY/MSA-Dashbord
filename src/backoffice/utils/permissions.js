@@ -21,6 +21,7 @@ export const ROUTES_MODULES = [
     { chemin: "/reading-plans", code: "bo.plans.voir" },
     { chemin: "/daily-verse", code: "bo.verset.voir" },
     { chemin: "/communication", code: "bo.communication.voir" },
+    { chemin: "/sujets-de-priere", code: "bo.prieres.voir" },
     { chemin: "/app-version", code: "bo.versions.voir" },
     { chemin: "/roles", code: SUPER_ADMIN },
     { chemin: "/journal", code: SUPER_ADMIN },

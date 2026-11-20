@@ -124,6 +124,14 @@ const router = createBrowserRouter([
                 path: "communication",
                 element: <CommunicationPage />,
             },
+            // Sujets de prière : catégories configurables + archivage automatique (chargée à la demande).
+            {
+                path: "sujets-de-priere",
+                lazy: () =>
+                    import("./backoffice/pages/PrayerCategoriesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
+            },
             // Rôles et permissions (super admin), chargés à la demande.
             {
                 path: "roles",

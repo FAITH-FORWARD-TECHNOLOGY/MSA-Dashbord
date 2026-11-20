@@ -29,6 +29,7 @@ export const navigation = [
             { name: "Plans", href: "/reading-plans", code: "bo.plans.voir" },
             { name: "Verset du jour", href: "/daily-verse", code: "bo.verset.voir" },
             { name: "Communication", href: "/communication", code: "bo.communication.voir" },
+            { name: "Sujets de prière", href: "/sujets-de-priere", code: "bo.prieres.voir" },
         ],
     },
     {
