@@ -13,12 +13,24 @@ import {
     Search,
 } from "lucide-react";
 import { API_BASE_URL } from "../config/api";
+import { useAuth } from "../hooks/useAuth";
 import BoutonRetour from "../components/BoutonRetour";
+import DeplacerMembresModal from "../components/DeplacerMembresModal";
 import { useRepartition } from "../hooks/useRepartition";
 import { EtatErreur, Squelette } from "../components/statistiques/StatsUi";
 import RepartitionTable from "../components/repartition/RepartitionTable";
 import EncartSansQuartier from "../components/repartition/EncartSansQuartier";
 import MembresQuartierModal from "../components/repartition/MembresQuartierModal";
+import {
+    basculer,
+    basculerTout,
+    estResponsable,
+    libelleResultat,
+    libelleSelection,
+    peutDeplacer,
+    purgerSelection,
+    toutEstSelectionne,
+} from "../utils/deplacement";
 import {
     TOUS,
     filtrerParQuartier,
@@ -66,6 +78,8 @@ const DAYS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "D
 export default function CelluleDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const estAdmin = peutDeplacer(user);
 
     const [cellule, setCellule] = useState(null);
     const [users, setUsers] = useState([]);
@@ -77,14 +91,26 @@ export default function CelluleDetail() {
     // Filtre par quartier (clé de lieuDuMembre) et membres affichés dans la modale.
     const [quartier, setQuartier] = useState(TOUS);
     const [cibleMembres, setCibleMembres] = useState(null);
+    // Déplacement de membres : sélection, mode de la fenêtre (null = fermée) et résultat.
+    const [selection, setSelection] = useState(() => new Set());
+    const [modeDeplacement, setModeDeplacement] = useState(null); // "selection" | "tous"
+    const [resultat, setResultat] = useState("");
+    // Rechargement discret après un déplacement : indicateur et erreur sans quitter la page.
+    const [rechargement, setRechargement] = useState(false);
+    const [erreurRecharge, setErreurRecharge] = useState("");
     const repartition = useRepartition({ celluleIds: id });
     // Le lieu n'est servi qu'à l'admin et au responsable de la cellule.
     const lieuxVisibles = useMemo(() => users.some((u) => "zone" in u), [users]);
     const choixQuartiers = useMemo(() => optionsQuartiers(users), [users]);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError("");
+    const fetchData = useCallback(async (silencieux = false) => {
+        if (silencieux) {
+            setRechargement(true);
+            setErreurRecharge("");
+        } else {
+            setLoading(true);
+            setError("");
+        }
         try {
             const [detailRes, usersRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/cellules/${id}/details`),
@@ -102,17 +128,27 @@ export default function CelluleDetail() {
             const usersBody = await usersRes.json();
 
             setCellule(detailBody?.data ?? null);
-            setUsers(
-                Array.isArray(usersBody?.data) ? usersBody.data : [],
-            );
+            const liste = Array.isArray(usersBody?.data) ? usersBody.data : [];
+            setUsers(liste);
+            setSelection((prec) => purgerSelection(prec, liste));
         } catch (err) {
-            setError(err.message || "Erreur lors du chargement");
+            const message = err.message || "Erreur lors du chargement";
+            if (silencieux) setErreurRecharge(message);
+            else setError(message);
         } finally {
-            setLoading(false);
+            if (silencieux) setRechargement(false);
+            else setLoading(false);
         }
     }, [id]);
 
     useEffect(() => {
+        // Nouvelle cellule : sélection, bandeaux et fenêtre repartent à zéro.
+        setCellule(null);
+        setUsers([]);
+        setSelection(new Set());
+        setResultat("");
+        setErreurRecharge("");
+        setModeDeplacement(null);
         fetchData();
     }, [fetchData]);
 
@@ -146,7 +182,12 @@ export default function CelluleDetail() {
         return list;
     }, [users, searchTerm, seniorityBucket, sortBy, quartier, lieuxVisibles]);
 
-    if (loading) {
+    // Le responsable reste : exclu de la sélection et de « tout déplacer ».
+    const leaderId = cellule?.leaderPersonId ?? null;
+    const deplacables = users.filter((u) => !estResponsable(u, leaderId));
+    const toutCoche = toutEstSelectionne(selection, filteredUsers, leaderId);
+
+    if (loading && !cellule) {
         return <div className="p-6 text-center text-blue-600">Chargement…</div>;
     }
     if (error) {
@@ -372,6 +413,79 @@ export default function CelluleDetail() {
                     </div>
                 </div>
 
+                {rechargement && (
+                    <p className="mx-6 mt-4 text-xs text-gray-500" role="status" aria-live="polite">
+                        Actualisation de la liste…
+                    </p>
+                )}
+
+                {erreurRecharge && (
+                    <div
+                        className="mx-6 mt-4 flex items-start justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800"
+                        role="alert"
+                    >
+                        <span>Impossible d'actualiser la liste : {erreurRecharge}</span>
+                        <button
+                            type="button"
+                            onClick={() => fetchData(true)}
+                            className="text-red-800 underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        >
+                            Réessayer
+                        </button>
+                    </div>
+                )}
+
+                {resultat && (
+                    <div
+                        className="mx-6 mt-4 flex items-start justify-between gap-3 rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800"
+                        role="status"
+                    >
+                        <span>{resultat}</span>
+                        <button
+                            type="button"
+                            onClick={() => setResultat("")}
+                            className="text-green-800 underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                )}
+
+                {/* Actions de déplacement (admin) */}
+                {estAdmin && deplacables.length > 0 && (
+                    <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+                        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input
+                                type="checkbox"
+                                checked={toutCoche}
+                                onChange={() => setSelection((prec) => basculerTout(prec, filteredUsers, leaderId))}
+                                className="h-4 w-4 rounded border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            />
+                            Tout sélectionner
+                            <span className="text-gray-500" aria-live="polite">
+                                · {libelleSelection(selection.size)}
+                            </span>
+                        </label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                disabled={selection.size === 0}
+                                onClick={() => setModeDeplacement("selection")}
+                                className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Déplacer la sélection
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setModeDeplacement("tous")}
+                                className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                Déplacer tous les membres
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {users.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         Aucun utilisateur n'est rattaché à cette cellule.
@@ -388,6 +502,16 @@ export default function CelluleDetail() {
                                 className="px-6 py-3 flex items-center justify-between gap-4 hover:bg-gray-50"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
+                                    {estAdmin && (
+                                        <input
+                                            type="checkbox"
+                                            checked={selection.has(u.id)}
+                                            disabled={estResponsable(u, leaderId)}
+                                            onChange={() => setSelection((prec) => basculer(prec, u.id))}
+                                            aria-label={`Sélectionner ${u.nom} ${u.prenom}`}
+                                            className="h-4 w-4 flex-shrink-0 rounded border-gray-300 disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        />
+                                    )}
                                     <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                                         <UsersIcon className="w-4 h-4 text-gray-600" />
                                     </div>
@@ -396,6 +520,14 @@ export default function CelluleDetail() {
                                             <p className="text-sm font-medium text-gray-900 truncate">
                                                 {u.nom} {u.prenom}
                                             </p>
+                                            {estAdmin && estResponsable(u, leaderId) && (
+                                                <span
+                                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                                                    title="Changez d'abord le responsable de la cellule pour le déplacer"
+                                                >
+                                                    Responsable : changez d'abord le responsable de la cellule
+                                                </span>
+                                            )}
                                             {u.role === "ADMIN" && (
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                                     Admin
@@ -458,6 +590,26 @@ export default function CelluleDetail() {
                     </ul>
                 )}
             </section>
+
+            {estAdmin && (
+            <DeplacerMembresModal
+                ouvert={modeDeplacement !== null}
+                celluleId={id}
+                celluleNom={cellule.name}
+                nombre={modeDeplacement === "tous" ? deplacables.length : selection.size}
+                ids={selection}
+                tous={modeDeplacement === "tous"}
+                onFermer={() => setModeDeplacement(null)}
+                onTermine={(res) => {
+                    setModeDeplacement(null);
+                    setSelection(new Set());
+                    setResultat(libelleResultat(res));
+                    fetchData(true);
+                    // Répartition rechargée en même temps (données gardées, sans clignotement).
+                    repartition.recharger();
+                }}
+            />
+            )}
 
             <MembresQuartierModal
                 cible={cibleMembres}
