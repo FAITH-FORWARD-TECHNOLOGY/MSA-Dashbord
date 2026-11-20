@@ -12,6 +12,7 @@ import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementTable from "../components/AnnouncementTable";
 import { liveScheduleHint, liveScheduleLabels } from "../utils/lives";
 import { usePermissions } from "../hooks/usePermissions";
+import { EtatVide } from "../components/statistiques/StatsUi";
 
 // Icônes connues de l'app (comm_models.dart, _iconFor) : garder les deux listes alignées.
 const RUBRIQUE_ICONES = [
@@ -279,6 +280,19 @@ const CommunicationPage = () => {
               : tab === "announcements"
                 ? announcements
                 : rubriques;
+
+    // « Voir » seul n'ouvre aucun onglet : état vide explicite.
+    if (sectionsAutorisees.length === 0) {
+        return (
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-2 text-gray-800">Module Communication</h2>
+                <EtatVide
+                    titre="Aucun onglet accessible"
+                    message="Votre rôle ouvre le module Communication sans aucune de ses sections (médiathèque, directs, annonces, rubriques). Contactez un super admin."
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="p-4">

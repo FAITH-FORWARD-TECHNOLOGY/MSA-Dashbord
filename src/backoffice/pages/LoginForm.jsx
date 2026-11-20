@@ -27,7 +27,7 @@ const LoginForm = ({ onLogin }) => {
     // voie le formulaire alors que la session est encore active.
     useEffect(() => {
         if (!authLoading && isAuthenticated) {
-            navigate("/users", { replace: true });
+            navigate("/", { replace: true });
         }
     }, [authLoading, isAuthenticated, navigate]);
 
@@ -75,9 +75,9 @@ const LoginForm = ({ onLogin }) => {
                 // App.jsx utilise une instance distincte de useAuth (state
                 // local par hook) qui ne se met pas à jour depuis ici → un
                 // navigate() ne suffit pas, App.jsx continuerait à afficher
-                // LoginForm. On force un reload complet vers /users pour
+                // LoginForm. On force un reload complet vers / (le layout choisit la première page accessible) pour
                 // que App.jsx ré-évalue isAuthenticated depuis localStorage.
-                window.location.assign("/users");
+                window.location.assign("/");
             }
         } catch (err) {
             setError(err.message || "Erreur de connexion. Veuillez réessayer.");
