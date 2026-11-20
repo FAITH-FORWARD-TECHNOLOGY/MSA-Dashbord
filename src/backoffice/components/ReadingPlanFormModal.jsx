@@ -88,8 +88,9 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
                             onUpload={uploadImage}
                             onBusyChange={setUploading}
                             disabled={busy}
+                            describedBy="plan-imageUrl-aide"
                         />
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p id="plan-imageUrl-aide" className="mt-1 text-xs text-gray-500">
                             JPEG, PNG ou WebP, 5 Mo maximum.
                         </p>
                     </div>

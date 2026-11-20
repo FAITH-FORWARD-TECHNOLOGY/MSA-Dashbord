@@ -7,7 +7,7 @@ const buttonClass =
 
 // Image (annonce, plan de lecture…) : envoi sur le backend MSA, aperçu, remplacement, retrait.
 // `value` = URL renvoyée par le serveur ; `onUpload(file)` renvoie cette URL.
-// `id` = identifiant du bouton (cible du libellé) ; `previewAlt` = texte alternatif de l'aperçu.
+// `id` = identifiant du bouton d'envoi ; `previewAlt` = texte alternatif de l'aperçu.
 function AnnouncementImageField({
     id = "annonce-imageUrl",
     previewAlt = "Aperçu de l’image de l’annonce",
