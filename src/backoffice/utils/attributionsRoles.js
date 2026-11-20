@@ -1,10 +1,39 @@
 // Attributions de rôles d'un compte : un rôle d'application (+ cellules) et un rôle du back-office.
 
+import { BASCULE_FAITE } from "../config/bascule.js";
+
 export const APP = "APP";
 export const BACKOFFICE = "BACKOFFICE";
 
-// Rôle d'application par défaut : « Membre » (système).
-export const roleMembre = (roles) => roles.find((r) => r.type === APP && r.systeme && !r.aPerimetre) ?? null;
+// Clés stables des rôles de départ (colonne `cle` du serveur).
+export const CLE_SUPER_ADMIN = "SUPER_ADMIN";
+export const CLE_MEMBRE = "MEMBRE";
+export const CLE_RESPONSABLE_CELLULE = "RESPONSABLE_CELLULE";
+
+export const aPourCle = (role, cle) => role?.cle === cle;
+export const estSuperAdmin = (role) => role?.cle === CLE_SUPER_ADMIN || role?.superAdmin === true;
+
+// Rôle d'application par défaut : « Membre », repéré par sa clé (ancienne heuristique si le serveur n'envoie pas `cle`).
+export function roleMembre(roles) {
+    const parCle = roles.find((r) => aPourCle(r, CLE_MEMBRE));
+    if (parCle) return parCle;
+    if (roles.some((r) => r.cle !== undefined)) return null;
+    return roles.find((r) => r.type === APP && r.systeme && !r.aPerimetre) ?? null;
+}
+
+// Rôles du back-office proposés : avant la bascule, seulement Super admin (+ le rôle déjà attribué, pour l'afficher).
+export function rolesBoProposes(roles, { basculeFaite = BASCULE_FAITE, actuelId = null } = {}) {
+    const bo = roles.filter((r) => r.type === BACKOFFICE);
+    if (basculeFaite) return bo;
+    return bo.filter((r) => estSuperAdmin(r) || r.id === actuelId);
+}
+
+// Un compte hérité : au moins une ligne dérivée de ses droits actuels (`derive: true`, sans id).
+export const aDesLignesDerivees = (attributions) => (attributions ?? []).some((a) => a?.derive === true);
+
+// Rôle de départ « Responsable de cellule » : renommable, jamais supprimable.
+export const suppressionInterdite = (role) => Boolean(role?.systeme) || aPourCle(role, CLE_RESPONSABLE_CELLULE);
+export const modificationPossible = (role) => !role?.systeme || aPourCle(role, CLE_RESPONSABLE_CELLULE);
 
 // GET /users/:id/roles -> état du formulaire ; les autres attributions sont conservées telles quelles.
 export function formulaireDepuisAttributions(attributions, roles) {
@@ -52,7 +81,7 @@ export function libelleRole(role, cellulesParId) {
     return c ? `${role.nom} (${c})` : role.nom;
 }
 
-// Message d'un 409 d'attribution (dernier super admin) : celui du serveur, sinon un texte clair.
+// Message d'une erreur d'attribution : le texte du serveur ; texte clair pour « dernier super admin ».
 export function messageDernierSuperAdmin(message) {
     return message && /dernier super admin/i.test(message)
         ? "Action impossible : c'est le dernier super admin. Nommez d'abord un autre super admin, puis recommencez."

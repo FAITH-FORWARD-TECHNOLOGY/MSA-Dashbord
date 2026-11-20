@@ -22,6 +22,9 @@ export const corpsPermissions = (selection) =>
 // Portée proposée à la première coche d'une permission à portée.
 export const porteeParDefaut = (role) => (role?.aPerimetre ? SA_CELLULE : TOUTES);
 
+// Portées proposées : un rôle sans périmètre n'a que « Toutes les cellules » (le serveur refuse le reste).
+export const porteesDisponibles = (role) => (role?.aPerimetre ? [TOUTES, SA_CELLULE] : [TOUTES]);
+
 // Case désactivée : au back-office, tout sauf « voir » tant que « voir » est décoché.
 export function caseDesactivee(module, selection, permission) {
     if (!estBackOffice(module) || permission.estVoir) return false;

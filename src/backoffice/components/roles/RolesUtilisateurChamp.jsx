@@ -1,7 +1,8 @@
 import { useId, useState } from "react";
 import { Shield } from "lucide-react";
 import { CHAMP } from "../referentiel/ReferentielUi";
-import { APP, BACKOFFICE, roleMembre } from "../../utils/attributionsRoles";
+import { BASCULE_FAITE } from "../../config/bascule.js";
+import { APP, roleMembre, rolesBoProposes } from "../../utils/attributionsRoles";
 
 // Cases des cellules d'un rôle à périmètre.
 function ChoixCellules({ cellules, valeur, onChange, idGroupe }) {
@@ -41,10 +42,10 @@ function ChoixCellules({ cellules, valeur, onChange, idGroupe }) {
 }
 
 // Champ « Rôles » d'une fiche utilisateur : rôle de l'application (+ cellules), rôle du back-office.
-export default function RolesUtilisateurChamp({ roles, form, onChange, cellules, erreurCellules }) {
+export default function RolesUtilisateurChamp({ roles, form, onChange, cellules, erreurCellules, derive = false }) {
     const id = useId();
     const rolesApp = roles.filter((r) => r.type === APP);
-    const rolesBo = roles.filter((r) => r.type === BACKOFFICE);
+    const rolesBo = rolesBoProposes(roles, { actuelId: form.boRoleId });
     const roleApp = roles.find((r) => r.id === form.appRoleId);
     const membre = roleMembre(roles);
 
@@ -111,7 +112,18 @@ export default function RolesUtilisateurChamp({ roles, form, onChange, cellules,
                         </option>
                     ))}
                 </select>
+                {!BASCULE_FAITE && (
+                    <p className="mt-1 text-xs text-gray-500">
+                        Avant la bascule, seul « Super admin » peut être attribué au back-office.
+                    </p>
+                )}
             </div>
+
+            {derive && (
+                <p className="text-xs text-gray-500">
+                    Droits actuels, pas encore enregistrés comme rôles : ils sont repris tels quels à l'enregistrement.
+                </p>
+            )}
 
             {form.conservees.length > 0 && (
                 <p className="text-xs text-gray-500">

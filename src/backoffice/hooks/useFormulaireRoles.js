@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { formulaireDepuisAttributions } from "../utils/attributionsRoles";
+import { aDesLignesDerivees, formulaireDepuisAttributions } from "../utils/attributionsRoles";
 import { useListeRoles, useRolesUtilisateur } from "./useRoles";
 
 // Valeur initiale du formulaire (rôles du compte, ou Membre pour un nouveau compte).
@@ -22,6 +22,7 @@ export function useFormulaireRoles(userId, actif) {
     return {
         roles: roles.data ?? [],
         form,
+        derive: aDesLignesDerivees(attributions.data),
         initial,
         setForm,
         chargement: roles.loading || (userId != null && attributions.loading),

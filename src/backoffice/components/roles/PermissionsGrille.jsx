@@ -20,11 +20,11 @@ const STYLE_PORTEE = {
 };
 
 // Choix de la portée d'une permission de l'app : deux segments bien visibles.
-function ChoixPortee({ libelle, valeur, onChange, desactive }) {
+function ChoixPortee({ libelle, valeur, onChange, desactive, portees }) {
     const nom = useId();
     return (
         <div role="radiogroup" aria-label={`Portée de « ${libelle} »`} className="inline-flex overflow-hidden rounded-md border border-gray-300 text-xs font-semibold">
-            {[TOUTES, SA_CELLULE].map((p) => {
+            {portees.map((p) => {
                 const actif = valeur === p;
                 return (
                     <label
@@ -51,7 +51,7 @@ function ChoixPortee({ libelle, valeur, onChange, desactive }) {
 }
 
 // Une carte par module : cases, « Tout cocher / Tout décocher », portée des permissions de l'app.
-export default function PermissionsGrille({ modules, selection, onChange, lectureSeule, porteeDefaut }) {
+export default function PermissionsGrille({ modules, selection, onChange, lectureSeule, porteeDefaut, portees = [TOUTES, SA_CELLULE] }) {
     return (
         <div className="grid gap-4 lg:grid-cols-2">
             {modules.map((m) => (
@@ -62,13 +62,14 @@ export default function PermissionsGrille({ modules, selection, onChange, lectur
                     onChange={onChange}
                     lectureSeule={lectureSeule}
                     porteeDefaut={porteeDefaut}
+                    portees={portees}
                 />
             ))}
         </div>
     );
 }
 
-function ModulePermissions({ module: m, selection, onChange, lectureSeule, porteeDefaut }) {
+function ModulePermissions({ module: m, selection, onChange, lectureSeule, porteeDefaut, portees }) {
     const id = useId();
     const { coches, total, tout } = decompteModule(m, selection);
     const aPortee = m.permissions.some((p) => p.aPerimetre);
@@ -133,6 +134,7 @@ function ModulePermissions({ module: m, selection, onChange, lectureSeule, porte
                                         libelle={p.libelle}
                                         valeur={selection[p.code]}
                                         desactive={lectureSeule}
+                                        portees={portees}
                                         onChange={(portee) => onChange(changerPortee(selection, p.code, portee))}
                                     />
                                 ) : (

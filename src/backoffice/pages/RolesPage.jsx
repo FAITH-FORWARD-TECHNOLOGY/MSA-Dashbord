@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Copy, KeyRound, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, Info, KeyRound, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { EtatErreur, EtatVide, Squelette } from "../components/statistiques/StatsUi";
 import {
     Annonce,
@@ -10,6 +10,8 @@ import {
     ENTETE_TABLEAU,
     Pastille,
 } from "../components/referentiel/ReferentielUi";
+import { BASCULE_FAITE, MESSAGE_BASCULE } from "../config/bascule.js";
+import { modificationPossible, suppressionInterdite, aPourCle, CLE_RESPONSABLE_CELLULE } from "../utils/attributionsRoles.js";
 import AlerteSuperAdmins from "../components/roles/AlerteSuperAdmins";
 import { DupliquerModal, RoleFormModal, SupprimerRoleModal } from "../components/roles/RoleModales";
 import {
@@ -28,10 +30,13 @@ const ONGLETS = [
 const EXPLICATION_SYSTEME =
     "Rôle système : il ne peut être ni modifié ni supprimé. Dupliquez-le pour obtenir un rôle modifiable.";
 
+const EXPLICATION_RESPONSABLE =
+    "Rôle de départ : il peut être renommé mais pas supprimé, car l'application s'appuie sur lui.";
+
 // Pluriel de « utilisateur » dans la colonne du nombre de comptes.
 const libelleNb = (n) => `${n} utilisateur${n > 1 ? "s" : ""}`;
 
-function ActionVerrouillee({ icone, libelle, role }) {
+function ActionVerrouillee({ icone, libelle, role, explication = EXPLICATION_SYSTEME }) {
     const Icone = icone;
     // Bouton grisé + explication lue par les lecteurs d'écran.
     return (
@@ -39,8 +44,8 @@ function ActionVerrouillee({ icone, libelle, role }) {
             type="button"
             className={BOUTON_LIGNE}
             disabled
-            title={EXPLICATION_SYSTEME}
-            aria-label={`${libelle} le rôle ${role.nom} : indisponible, ${EXPLICATION_SYSTEME}`}
+            title={explication}
+            aria-label={`${libelle} le rôle ${role.nom} : indisponible, ${explication}`}
         >
             <Icone className="size-4" aria-hidden="true" />
             <span className="hidden xl:inline">{libelle}</span>
@@ -121,6 +126,16 @@ export default function RolesPage() {
 
             <Annonce message={annonce} />
 
+            {type === "BACKOFFICE" && !BASCULE_FAITE && (
+                <p role="note" className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                    <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>
+                        <strong>{MESSAGE_BASCULE}.</strong> Ces rôles peuvent être créés et paramétrés, mais seul « Super admin »
+                        peut être attribué avant la bascule.
+                    </span>
+                </p>
+            )}
+
             <div id={`${idOnglets}-panneau`} role="tabpanel" aria-labelledby={`${idOnglets}-${type}`}>
                 {loading && !data ? (
                     <Squelette lignes={4} />
@@ -179,7 +194,7 @@ export default function RolesPage() {
                                                     <KeyRound className="size-4" aria-hidden="true" />
                                                     <span className="hidden xl:inline">Permissions</span>
                                                 </button>
-                                                {r.systeme ? (
+                                                {!modificationPossible(r) ? (
                                                     <ActionVerrouillee icone={Pencil} libelle="Modifier" role={r} />
                                                 ) : (
                                                     <button
@@ -201,8 +216,13 @@ export default function RolesPage() {
                                                     <Copy className="size-4" aria-hidden="true" />
                                                     <span className="hidden xl:inline">Dupliquer</span>
                                                 </button>
-                                                {r.systeme ? (
-                                                    <ActionVerrouillee icone={Trash2} libelle="Supprimer" role={r} />
+                                                {suppressionInterdite(r) ? (
+                                                    <ActionVerrouillee
+                                                        icone={Trash2}
+                                                        libelle="Supprimer"
+                                                        role={r}
+                                                        explication={aPourCle(r, CLE_RESPONSABLE_CELLULE) ? EXPLICATION_RESPONSABLE : EXPLICATION_SYSTEME}
+                                                    />
                                                 ) : (
                                                     <button
                                                         type="button"

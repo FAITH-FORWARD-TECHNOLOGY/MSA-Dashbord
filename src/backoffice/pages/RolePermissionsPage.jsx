@@ -12,6 +12,7 @@ import {
     modulesDuType,
     modulesSansVoir,
     porteeParDefaut,
+    porteesDisponibles,
     selectionDepuisRole,
 } from "../utils/rolesEdition";
 
@@ -142,6 +143,7 @@ export default function RolePermissionsPage() {
                     }}
                     lectureSeule={verrouille}
                     porteeDefaut={porteeParDefaut(r)}
+                    portees={porteesDisponibles(r)}
                 />
             )}
 

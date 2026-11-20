@@ -42,6 +42,7 @@ export default function BlocRolesUtilisateur({ rolesActifs, roleForm, cellules, 
             onChange={roleForm.setForm}
             cellules={cellules}
             erreurCellules={erreurCellules}
+            derive={roleForm.derive}
         />
     );
 }

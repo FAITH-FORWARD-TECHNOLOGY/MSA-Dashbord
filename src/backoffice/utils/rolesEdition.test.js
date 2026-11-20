@@ -71,3 +71,9 @@ test("corps : liste { code, portee } et validation avant envoi", () => {
     assert.deepEqual(modulesSansVoir([cellules, stats], { "bo.cellules.creer": null }), ["Cellules"]);
     assert.deepEqual(modulesSansVoir([cellules, stats], { "bo.cellules.voir": null, "bo.cellules.creer": null }), []);
 });
+
+test("rôle sans périmètre : seule la portée « Toutes les cellules » est proposée", async () => {
+    const { porteesDisponibles, TOUTES, SA_CELLULE } = await import("./rolesEdition.js");
+    assert.deepEqual(porteesDisponibles({ aPerimetre: false }), [TOUTES]);
+    assert.deepEqual(porteesDisponibles({ aPerimetre: true }), [TOUTES, SA_CELLULE]);
+});

@@ -3,8 +3,9 @@ import { Loader2 } from "lucide-react";
 import { AlerteErreur, BOUTON_PRIMAIRE, BOUTON_SECONDAIRE, CHAMP, Champ, Modale } from "../referentiel/ReferentielUi";
 import { EtatErreur } from "../statistiques/StatsUi";
 import { attribuerEnMasse, useListeRoles } from "../../hooks/useRoles";
+import { BASCULE_FAITE } from "../../config/bascule.js";
 import { useCellules } from "../../hooks/useCellules";
-import { messageDernierSuperAdmin } from "../../utils/attributionsRoles";
+import { messageDernierSuperAdmin, rolesBoProposes } from "../../utils/attributionsRoles";
 
 // Attribution en masse : un rôle (et une cellule s'il est à périmètre) pour les comptes cochés.
 export default function AttribuerRoleModal({ userIds, onFermer, onTermine }) {
@@ -113,8 +114,8 @@ export default function AttribuerRoleModal({ userIds, onFermer, onTermine }) {
                                     <option key={r.id} value={r.id}>{r.nom}</option>
                                 ))}
                             </optgroup>
-                            <optgroup label="Back-office">
-                                {liste.filter((r) => r.type === "BACKOFFICE").map((r) => (
+                            <optgroup label={BASCULE_FAITE ? "Back-office" : "Back-office (Super admin seulement avant la bascule)"}>
+                                {rolesBoProposes(liste).map((r) => (
                                     <option key={r.id} value={r.id}>{r.nom}</option>
                                 ))}
                             </optgroup>
