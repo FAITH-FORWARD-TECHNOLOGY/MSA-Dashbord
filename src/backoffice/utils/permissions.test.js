@@ -9,6 +9,7 @@ import {
     premiereRoute,
     routeAutorisee,
 } from "./permissions.js";
+import { navigation } from "../config/navigation.js";
 
 const MENU = [
     {
@@ -78,12 +79,27 @@ test("menu : filtré par permissions, groupe vide retiré", () => {
     assert.deepEqual(m[0].items.map((i) => i.href), ["/users"]);
 });
 
-test("menu : repli identique à l'ancien drapeau adminOnly", () => {
-    const user = filtrerMenu(MENU, creerAcces({ role: "USER" }));
-    assert.deepEqual(user[0].items.map((i) => i.href), ["/users"]);
-    const admin = filtrerMenu(MENU, creerAcces({ role: "ADMIN" }));
-    assert.deepEqual(admin[0].items.map((i) => i.href), ["/users", "/communes", "/export-donnees"]);
-    assert.equal(admin.length, 1);
+test("menu : repli identique à l'ancien drapeau adminOnly, avec la vraie navigation", () => {
+    const hrefs = (m) => m.flatMap((g) => g.items.map((i) => i.href));
+    const user = hrefs(filtrerMenu(navigation, creerAcces({ role: "USER" })));
+    assert.ok(user.includes("/users") && user.includes("/cellules") && user.includes("/statistiques"));
+    for (const h of ["/communes", "/quartiers", "/membres-par-quartier", "/export-donnees", "/roles", "/journal"]) {
+        assert.equal(user.includes(h), false, `USER ne voit pas ${h}`);
+    }
+    // ADMIN en repli : tout sauf le module Rôles (réservé au serveur à rôles).
+    const admin = hrefs(filtrerMenu(navigation, creerAcces({ role: "ADMIN" })));
+    for (const h of ["/users", "/communes", "/quartiers", "/membres-par-quartier", "/export-donnees"]) {
+        assert.ok(admin.includes(h), `ADMIN voit ${h}`);
+    }
+    assert.equal(admin.includes("/roles") || admin.includes("/journal"), false);
+});
+
+test("routes en repli : USER refusé sur /communes, ADMIN refusé sur /roles", () => {
+    assert.equal(routeAutorisee(creerAcces({ role: "USER" }), "/communes"), false);
+    assert.equal(routeAutorisee(creerAcces({ role: "USER" }), "/users"), true);
+    assert.equal(routeAutorisee(creerAcces({ role: "ADMIN" }), "/communes"), true);
+    assert.equal(routeAutorisee(creerAcces({ role: "ADMIN" }), "/roles"), false);
+    assert.equal(routeAutorisee(creerAcces({ role: "ADMIN" }), "/journal"), false);
 });
 
 test("menu : super admin voit le module Rôles", () => {

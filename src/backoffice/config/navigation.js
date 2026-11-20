@@ -1,4 +1,4 @@
-import { SUPER_ADMIN } from "../utils/permissions";
+import { SUPER_ADMIN } from "../utils/permissions.js";
 
 // Navigation groupée par thème : un menu déroulant par groupe.
 export const navigation = [
