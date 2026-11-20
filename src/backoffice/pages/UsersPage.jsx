@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import UserList from "../components/UserListe";
 import UserFormModal from "../components/UserFormModal";
+import ImportUtilisateursModal from "../components/ImportUtilisateursModal";
 import { useUsers } from "../hooks/useUsers";
 import { useAuth } from "../hooks/useAuth";
 import QuartierResidenceField from "../components/referentiel/QuartierResidenceField";
@@ -8,6 +9,7 @@ import { libelleFiltreQuartier, parametresUtilisateurs } from "../utils/referent
 
 const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
+    const [importOuvert, setImportOuvert] = useState(false);
     const { user } = useAuth();
     // Filtre « Quartier » (admin) : quartier choisi, SANS_QUARTIER ou null.
     const [filtreQuartier, setFiltreQuartier] = useState(null);
@@ -27,12 +29,23 @@ const UsersPage = () => {
                 Gestion des utilisateurs
             </h2>
 
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => setShowModal(true)}
-            >
-                Créer un utilisateur
-            </button>
+            <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    onClick={() => setShowModal(true)}
+                >
+                    Créer un utilisateur
+                </button>
+                {user?.role === "ADMIN" && (
+                    <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        onClick={() => setImportOuvert(true)}
+                    >
+                        Importer (CSV)
+                    </button>
+                )}
+            </div>
 
             {user?.role === "ADMIN" && (
                 <div className="mb-4 sm:max-w-md">
@@ -65,6 +78,11 @@ const UsersPage = () => {
                     onView={(id) => console.log("Voir user", id)}
                 />
             )}
+            <ImportUtilisateursModal
+                ouvert={importOuvert}
+                onFermer={() => setImportOuvert(false)}
+                onImporte={() => refetch()}
+            />
             {showModal && (
                 <UserFormModal
                     onClose={() => setShowModal(false)}
