@@ -10,6 +10,7 @@ import {
     ENTETE_TABLEAU,
     Pastille,
 } from "../components/referentiel/ReferentielUi";
+import AlerteSuperAdmins from "../components/roles/AlerteSuperAdmins";
 import { DupliquerModal, RoleFormModal, SupprimerRoleModal } from "../components/roles/RoleModales";
 import {
     creerRole,
@@ -52,6 +53,8 @@ export default function RolesPage() {
     const idOnglets = useId();
     const [type, setType] = useState("APP");
     const { data, loading, error, recharger } = useListeRoles(type);
+    // Rôles du back-office pour l'alerte, quel que soit l'onglet ouvert.
+    const boRoles = useListeRoles("BACKOFFICE");
     // Modale ouverte : { mode: "creer" | "modifier" | "dupliquer" | "supprimer", role? }.
     const [modale, setModale] = useState(null);
     const [annonce, setAnnonce] = useState("");
@@ -63,6 +66,7 @@ export default function RolesPage() {
         setModale(null);
         setAnnonce(message);
         recharger();
+        boRoles.recharger();
     };
 
     const surToucheOnglets = (e) => {
@@ -86,6 +90,8 @@ export default function RolesPage() {
                     Créer un rôle
                 </button>
             </div>
+
+            <AlerteSuperAdmins roles={boRoles.data} />
 
             <div role="tablist" aria-label="Type de rôle" className="flex gap-2 border-b border-gray-200" onKeyDown={surToucheOnglets}>
                 {ONGLETS.map((o) => {

@@ -58,9 +58,19 @@ export function useCellulesNoms(actif) {
     return new Map((data?.data ?? []).map((c) => [Number(c.id), c.name]));
 }
 
-// Comptes super admin (filtre « Acteur » du journal) : rôle super admin du back-office, puis ses comptes.
+// Comptes ayant un rôle de back-office (filtre « Acteur » du journal) : GET /users?roleId= par rôle, sans doublon.
 export function useActeursJournal(roles) {
-    const sa = (roles ?? []).find((r) => r.superAdmin);
-    const { data } = useChargement(() => appelApi(`/users${chaineRequete({ roleId: sa.id })}`), `acteurs:${sa?.id}`, Boolean(sa));
+    const bo = (roles ?? []).filter((r) => r.type === "BACKOFFICE");
+    const cle = bo.map((r) => r.id).join(",");
+    const { data } = useChargement(
+        async () => {
+            const listes = await Promise.all(bo.map((r) => appelApi(`/users${chaineRequete({ roleId: r.id })}`)));
+            const parId = new Map();
+            listes.flat().forEach((u) => u?.id != null && parId.set(u.id, u));
+            return [...parId.values()];
+        },
+        `acteurs:${cle}`,
+        bo.length > 0,
+    );
     return Array.isArray(data) ? data : [];
 }

@@ -1,9 +1,10 @@
 import { useId, useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { EtatErreur, EtatVide, Squelette } from "../components/statistiques/StatsUi";
 import { CHAMP, ENTETE_TABLEAU, Pagination } from "../components/referentiel/ReferentielUi";
 import { useActeursJournal, useJournal, useListeRoles } from "../hooks/useRoles";
-import { ACTIONS_JOURNAL, alerteSuperAdmins, libelleAction } from "../utils/journalRoles";
+import AlerteSuperAdmins from "../components/roles/AlerteSuperAdmins";
+import { ACTIONS_JOURNAL, libelleAction } from "../utils/journalRoles";
 
 const TAILLE = 20;
 
@@ -93,15 +94,7 @@ export default function JournalPage() {
                 </p>
             </div>
 
-            {alerteSuperAdmins(roles.data) && (
-                <div role="alert" className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
-                    <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
-                    <p className="text-sm">
-                        <strong>Moins de 2 super admins.</strong> Il est recommandé d'en avoir au moins deux : si le seul
-                        super admin perd l'accès, plus personne ne peut gérer les rôles.
-                    </p>
-                </div>
-            )}
+            <AlerteSuperAdmins roles={roles.data} />
 
             <div className="grid grid-cols-1 gap-3 rounded bg-white p-4 shadow sm:grid-cols-2 lg:grid-cols-4">
                 <div>
