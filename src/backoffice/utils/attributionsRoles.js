@@ -58,3 +58,21 @@ export function messageDernierSuperAdmin(message) {
         ? "Action impossible : c'est le dernier super admin. Nommez d'abord un autre super admin, puis recommencez."
         : message;
 }
+
+// Identifiant du compte dans la réponse de la création (forme non figée) ; null si introuvable.
+export function idUtilisateurCree(reponse) {
+    const candidats = [reponse?.id, reponse?.user?.id, reponse?.data?.id, reponse?.data?.user?.id];
+    const id = candidats.find((c) => Number.isInteger(Number(c)) && c !== null && c !== undefined && c !== "");
+    return id === undefined ? null : Number(id);
+}
+
+// Formulaire modifié par rapport à l'état chargé (évite un PUT inutile).
+export function formulaireModifie(a, b) {
+    const cellules = (f) => [...f.appCellules].sort((x, y) => x - y).join(",");
+    return a.appRoleId !== b.appRoleId || a.boRoleId !== b.boRoleId || cellules(a) !== cellules(b);
+}
+
+// Roles d'une ligne de liste en texte : « Responsable de cellule (Cellule 3), Membre ».
+export function resumeRoles(roles, cellulesParId) {
+    return (roles ?? []).map((r) => libelleRole(r, cellulesParId));
+}

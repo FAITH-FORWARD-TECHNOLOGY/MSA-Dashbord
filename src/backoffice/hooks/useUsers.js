@@ -118,9 +118,12 @@ export function useUsers(filtres) {
             throw new Error(texteMessage(body) || `Erreur ${response.status}`);
         }
 
+        // Le corps de la réponse (compte créé) sert à lui attribuer ses rôles.
+        const cree = await response.json().catch(() => true);
+
         // Recharger les données après la création
         await fetchUsers();
-        return true;
+        return cree || true;
     };
 
     useEffect(() => {

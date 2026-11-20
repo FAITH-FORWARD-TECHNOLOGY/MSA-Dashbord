@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { libelleLieuUtilisateur, lieuUtilisateur } from "../utils/referentiel";
 import EditUserModal from "./EditUserModal";
+import AttribuerRoleModal from "./roles/AttribuerRoleModal";
+import { useCellulesNoms } from "../hooks/useRoles";
+import { libelleRole } from "../utils/attributionsRoles";
 import { usePermissions } from "../hooks/usePermissions";
 
 type UserListProps = {
@@ -25,8 +28,10 @@ type UserListProps = {
     onUpdate: (id: number, data: any) => void;
     onDelete: (id: number) => void;
     onView?: (id: number) => void;
-    // Vrai quand la liste est restreinte par le filtre « Quartier ».
+    // Vrai quand la liste est restreinte par un filtre (quartier, rôle).
     filtreActif?: boolean;
+    // Recharge la liste (après une attribution de rôles en masse).
+    onRefresh?: () => void;
 };
 
 // Construit la liste compacte de pages à afficher dans la pagination.
@@ -59,9 +64,15 @@ const UserList: React.FC<UserListProps> = ({
     onDelete,
     onView,
     filtreActif = false,
+    onRefresh,
 }) => {
     const navigate = useNavigate();
-    const { peut } = usePermissions();
+    const { peut, nouveau, superAdmin } = usePermissions();
+    // Serveur à rôles : colonne Rôle ; super admin : sélection et attribution en masse.
+    const cellulesNoms = useCellulesNoms(nouveau);
+    const attributionMasse = nouveau && superAdmin;
+    const [selection, setSelection] = useState<number[]>([]);
+    const [masseOuverte, setMasseOuverte] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -232,6 +243,48 @@ const UserList: React.FC<UserListProps> = ({
                 )}
             </div>
 
+            {/* Attribution en masse (super admin) */}
+            {attributionMasse && users.length > 0 && (
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm">
+                    <label className="flex items-center gap-2 text-gray-700">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-blue-600"
+                            checked={paginatedUsers.length > 0 && paginatedUsers.every((u) => selection.includes(u.id))}
+                            onChange={(e) => {
+                                const ids = paginatedUsers.map((u) => u.id);
+                                setSelection((prev) =>
+                                    e.target.checked
+                                        ? Array.from(new Set([...prev, ...ids]))
+                                        : prev.filter((id) => !ids.includes(id))
+                                );
+                            }}
+                        />
+                        Tout sélectionner sur cette page
+                    </label>
+                    <span className="text-gray-500" aria-live="polite">
+                        {selection.length} sélectionné{selection.length > 1 ? "s" : ""}
+                    </span>
+                    {selection.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setSelection([])}
+                            className="rounded text-blue-700 underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        >
+                            Effacer la sélection
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        disabled={selection.length === 0}
+                        onClick={() => setMasseOuverte(true)}
+                        className="ml-auto inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Attribuer un rôle
+                    </button>
+                </div>
+            )}
+
             {/* Liste des utilisateurs ou message vide */}
             {users.length === 0 ? (
                 <div className="text-center py-12">
@@ -241,7 +294,9 @@ const UserList: React.FC<UserListProps> = ({
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
                         {filtreActif
-                            ? "Aucun utilisateur ne correspond à ce quartier."
+                            ? nouveau
+                                ? "Aucun utilisateur ne correspond à ces filtres."
+                                : "Aucun utilisateur ne correspond à ce quartier."
                             : "Commencez par créer un nouvel utilisateur."}
                     </p>
                 </div>
@@ -267,6 +322,21 @@ const UserList: React.FC<UserListProps> = ({
                                     <div className="px-4 py-4 sm:px-6">
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex items-start sm:items-center space-x-4 flex-1 min-w-0">
+                                                {attributionMasse && (
+                                                    <input
+                                                        type="checkbox"
+                                                        className="h-4 w-4 flex-shrink-0 accent-blue-600"
+                                                        aria-label={`Sélectionner ${user.nom} ${user.prenom}`}
+                                                        checked={selection.includes(user.id)}
+                                                        onChange={() =>
+                                                            setSelection((prev) =>
+                                                                prev.includes(user.id)
+                                                                    ? prev.filter((id) => id !== user.id)
+                                                                    : [...prev, user.id]
+                                                            )
+                                                        }
+                                                    />
+                                                )}
                                                 <div className="flex-shrink-0">
                                                     <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                                                         <UserIcon className="h-6 w-6 text-gray-600" />
@@ -278,7 +348,24 @@ const UserList: React.FC<UserListProps> = ({
                                                             {user.nom}{" "}
                                                             {user.prenom}
                                                         </p>
-                                                        <span
+{nouveau ? (
+                                                            <span className="flex flex-wrap items-center gap-1">
+                                                                <span className="sr-only">Rôles : </span>
+                                                                {((user as any).roles ?? []).map((r: any) => (
+                                                                    <span
+                                                                        key={`${r.id}-${r.celluleId ?? ""}`}
+                                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                                            r.type === "BACKOFFICE"
+                                                                                ? "bg-purple-100 text-purple-800"
+                                                                                : "bg-green-100 text-green-800"
+                                                                        }`}
+                                                                    >
+                                                                        {libelleRole(r, cellulesNoms)}
+                                                                    </span>
+                                                                ))}
+                                                            </span>
+                                                        ) : (
+                                                                                                                    <span
                                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                                 user.role ===
                                                                 "ADMIN"
@@ -291,6 +378,7 @@ const UserList: React.FC<UserListProps> = ({
                                                                 ? "🛡️ Admin"
                                                                 : "👤 Utilisateur"}
                                                         </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1">
                                                         <p className="flex items-center text-sm text-gray-500 min-w-0 max-w-full">
@@ -463,6 +551,19 @@ const UserList: React.FC<UserListProps> = ({
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Attribution de rôle en masse */}
+            {masseOuverte && (
+                <AttribuerRoleModal
+                    userIds={selection}
+                    onFermer={() => setMasseOuverte(false)}
+                    onTermine={() => {
+                        setMasseOuverte(false);
+                        setSelection([]);
+                        onRefresh?.();
+                    }}
+                />
             )}
 
             {/* Modal d'édition */}

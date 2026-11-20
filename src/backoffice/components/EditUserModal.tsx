@@ -5,6 +5,16 @@ import { usePays } from "../hooks/usePays";
 import { useCellules } from "../hooks/useCellules";
 import QuartierResidenceField from "./referentiel/QuartierResidenceField";
 import { corpsLieu, lieuUtilisateur, quartierUtilisateur } from "../utils/referentiel";
+import { usePermissions, rafraichirPermissions } from "../hooks/usePermissions";
+import { remplacerRolesUtilisateur } from "../hooks/useRoles";
+import RolesUtilisateurChamp from "./roles/RolesUtilisateurChamp";
+import { useFormulaireRoles } from "../hooks/useFormulaireRoles";
+import {
+    attributionsDepuisFormulaire,
+    erreurFormulaire,
+    formulaireModifie,
+    messageDernierSuperAdmin,
+} from "../utils/attributionsRoles";
 
 type EditUserModalProps = {
     user: UserType;
@@ -19,6 +29,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 }) => {
     const { pays } = usePays();
     const { cellules } = useCellules();
+    // Serveur à rôles et super admin : champ Rôles ; ancien serveur : select Utilisateur / Admin.
+    const { nouveau, superAdmin, session } = usePermissions();
+    const rolesActifs = nouveau && superAdmin;
+    const roleForm = useFormulaireRoles(user.id, rolesActifs);
+    const [erreurCellules, setErreurCellules] = useState("");
 
     const [formData, setFormData] = useState({
         nom: user.nom || "",
@@ -102,8 +117,30 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         // Quartier de résidence : absent du corps s'il n'a pas changé.
         Object.assign(dataToSend, corpsLieu(quartier, quartierInitial));
 
+        setErreurCellules("");
+        const rolesChanges =
+            rolesActifs && roleForm.form && roleForm.initial && formulaireModifie(roleForm.form, roleForm.initial);
+        if (rolesChanges && roleForm.form) {
+            const e2 = erreurFormulaire(roleForm.form, roleForm.roles);
+            if (e2) {
+                setErreurCellules(e2);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
+            // Rôles d'abord : un refus (dernier super admin) évite d'enregistrer le reste à moitié.
+            if (rolesChanges && roleForm.form) {
+                try {
+                    await remplacerRolesUtilisateur(user.id, attributionsDepuisFormulaire(roleForm.form, roleForm.roles));
+                } catch (errRoles: any) {
+                    setError(messageDernierSuperAdmin(errRoles?.message) || "Attribution des rôles impossible.");
+                    return;
+                }
+                // Mon propre rôle a pu changer : menu et boutons se mettent à jour.
+                if (Number(session?.id) === Number(user.id)) rafraichirPermissions();
+            }
             await onSave(dataToSend);
             onClose();
         } catch (err: any) {
@@ -273,21 +310,41 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                <Shield className="w-4 h-4 inline mr-1" />
-                                Rôle
-                            </label>
-                            <select
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                            >
-                                <option value="USER">👤 Utilisateur</option>
-                                <option value="ADMIN">🛡️ Admin</option>
-                            </select>
-                        </div>
+                        {!nouveau && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <Shield className="w-4 h-4 inline mr-1" />
+                                    Rôle
+                                </label>
+                                <select
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                >
+                                    <option value="USER">👤 Utilisateur</option>
+                                    <option value="ADMIN">🛡️ Admin</option>
+                                </select>
+                            </div>
+                        )}
+                        {rolesActifs &&
+                            (roleForm.chargement && !roleForm.form ? (
+                                <p className="text-sm text-gray-500" role="status">Chargement des rôles…</p>
+                            ) : roleForm.erreur ? (
+                                <p role="alert" className="text-sm text-red-600">
+                                    Rôles indisponibles : {roleForm.erreur}
+                                </p>
+                            ) : (
+                                roleForm.form && (
+                                    <RolesUtilisateurChamp
+                                        roles={roleForm.roles}
+                                        form={roleForm.form}
+                                        onChange={roleForm.setForm}
+                                        cellules={cellules as any[]}
+                                        erreurCellules={erreurCellules}
+                                    />
+                                )
+                            ))}
 
                         <div className="flex justify-end gap-3 pt-4">
                             <button

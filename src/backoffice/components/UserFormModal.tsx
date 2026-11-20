@@ -15,6 +15,17 @@ import { usePays } from "../hooks/usePays";
 import { useCellules } from "../hooks/useCellules";
 import QuartierResidenceField from "./referentiel/QuartierResidenceField";
 import { corpsLieu } from "../utils/referentiel";
+import { usePermissions } from "../hooks/usePermissions";
+import { remplacerRolesUtilisateur } from "../hooks/useRoles";
+import { appelApi } from "../hooks/useReferentiel";
+import RolesUtilisateurChamp from "./roles/RolesUtilisateurChamp";
+import { useFormulaireRoles } from "../hooks/useFormulaireRoles";
+import {
+    attributionsDepuisFormulaire,
+    erreurFormulaire,
+    idUtilisateurCree,
+    messageDernierSuperAdmin,
+} from "../utils/attributionsRoles";
 
 type UserFormModalProps = {
     onClose: () => void;
@@ -28,6 +39,13 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     const { createUser } = useUsers();
     const { pays } = usePays();
     const { cellules } = useCellules();
+    // Serveur à rôles et super admin : champ Rôles ; ancien serveur : select Utilisateur / Admin.
+    const { nouveau, superAdmin } = usePermissions();
+    const rolesActifs = nouveau && superAdmin;
+    const roleForm = useFormulaireRoles(undefined, rolesActifs);
+    // Compte déjà créé quand seule l'attribution des rôles a échoué (nouvel essai sans recréer).
+    const [creeId, setCreeId] = useState<number | null>(null);
+    const [erreurCellules, setErreurCellules] = useState("");
 
     const [formData, setFormData] = useState({
         nom: "",
@@ -145,9 +163,40 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             /* localStorage indisponible — on continue sans ownerdId */
         }
 
+        setErreurCellules("");
+        if (rolesActifs && roleForm.form) {
+            const e2 = erreurFormulaire(roleForm.form, roleForm.roles);
+            if (e2) {
+                setErreurCellules(e2);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
-            await createUser(dataToSend);
+            let id = creeId;
+            if (id === null) {
+                const reponse = await createUser(dataToSend);
+                id = idUtilisateurCree(reponse);
+                if (rolesActifs && roleForm.form && id === null) {
+                    // Réponse sans identifiant : on retrouve le compte par son email.
+                    const liste = await appelApi("/users");
+                    id = (Array.isArray(liste) ? liste : []).find((u: any) => u.email === dataToSend.email)?.id ?? null;
+                }
+            }
+            if (rolesActifs && roleForm.form && id !== null) {
+                setCreeId(id);
+                try {
+                    await remplacerRolesUtilisateur(id, attributionsDepuisFormulaire(roleForm.form, roleForm.roles));
+                } catch (errRoles: any) {
+                    setError(
+                        `Le compte est créé, mais ses rôles n'ont pas pu être attribués : ${
+                            messageDernierSuperAdmin(errRoles?.message) || "erreur inconnue"
+                        }. Corrigez puis réessayez.`,
+                    );
+                    return;
+                }
+            }
             onClose();
             onSuccess();
             setFormData({
@@ -334,21 +383,41 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                             )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                <Shield className="w-4 h-4 inline mr-1" />
-                                Rôle
-                            </label>
-                            <select
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                            >
-                                <option value="USER">👤 Utilisateur</option>
-                                <option value="ADMIN">🛡️ Admin</option>
-                            </select>
-                        </div>
+                        {!nouveau && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <Shield className="w-4 h-4 inline mr-1" />
+                                    Rôle
+                                </label>
+                                <select
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                >
+                                    <option value="USER">👤 Utilisateur</option>
+                                    <option value="ADMIN">🛡️ Admin</option>
+                                </select>
+                            </div>
+                        )}
+                        {rolesActifs &&
+                            (roleForm.chargement && !roleForm.form ? (
+                                <p className="text-sm text-gray-500" role="status">Chargement des rôles…</p>
+                            ) : roleForm.erreur ? (
+                                <p role="alert" className="text-sm text-red-600">
+                                    Rôles indisponibles : {roleForm.erreur}
+                                </p>
+                            ) : (
+                                roleForm.form && (
+                                    <RolesUtilisateurChamp
+                                        roles={roleForm.roles}
+                                        form={roleForm.form}
+                                        onChange={roleForm.setForm}
+                                        cellules={cellules as any[]}
+                                        erreurCellules={erreurCellules}
+                                    />
+                                )
+                            ))}
 
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">

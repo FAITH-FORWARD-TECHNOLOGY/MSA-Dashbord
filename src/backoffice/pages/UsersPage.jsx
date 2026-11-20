@@ -2,13 +2,20 @@ import React, { useState } from "react";
 import UserList from "../components/UserListe";
 import UserFormModal from "../components/UserFormModal";
 import { useUsers } from "../hooks/useUsers";
+import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "../hooks/usePermissions";
+import { useListeRoles } from "../hooks/useRoles";
 import QuartierResidenceField from "../components/referentiel/QuartierResidenceField";
 import { libelleFiltreQuartier, parametresUtilisateurs } from "../utils/referentiel";
 
 const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
-    const { peut } = usePermissions();
+    const { peut, nouveau, superAdmin } = usePermissions();
+    // Filtre « Rôle » (super admin, serveur à rôles) ; ?roleId= vient de la liste des rôles.
+    const [params, setParams] = useSearchParams();
+    const roleId = params.get("roleId") ?? "";
+    const filtreRoleActif = nouveau && superAdmin;
+    const roles = useListeRoles(undefined, filtreRoleActif);
     // Filtre « Quartier » (admin) : quartier choisi, SANS_QUARTIER ou null.
     const [filtreQuartier, setFiltreQuartier] = useState(null);
     const {
@@ -19,7 +26,10 @@ const UsersPage = () => {
         updateUser,
         deleteUser,
         createUser,
-    } = useUsers(parametresUtilisateurs(filtreQuartier));
+    } = useUsers({
+        ...parametresUtilisateurs(filtreQuartier),
+        ...(filtreRoleActif && roleId ? { roleId } : {}),
+    });
 
     return (
         <div className="p-4">
@@ -34,6 +44,33 @@ const UsersPage = () => {
                 >
                     Créer un utilisateur
                 </button>
+            )}
+
+            {filtreRoleActif && (
+                <div className="mb-4 sm:max-w-md">
+                    <label htmlFor="filtre-role" className="mb-1 block text-sm text-gray-700">
+                        Rôle
+                    </label>
+                    <select
+                        id="filtre-role"
+                        value={roleId}
+                        onChange={(e) => {
+                            const suivant = new URLSearchParams(params);
+                            if (e.target.value) suivant.set("roleId", e.target.value);
+                            else suivant.delete("roleId");
+                            setParams(suivant, { replace: true });
+                        }}
+                        className="block w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">Tous les rôles</option>
+                        {(roles.data ?? []).map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {r.nom} ({r.type === "APP" ? "application" : "back-office"})
+                            </option>
+                        ))}
+                    </select>
+                    {roles.error && <p className="mt-1 text-sm text-red-600">{roles.error}</p>}
+                </div>
             )}
 
             {peut("bo.quartiers.voir") && (
@@ -61,7 +98,8 @@ const UsersPage = () => {
             {!loading && !error && (
                 <UserList
                     users={users}
-                    filtreActif={filtreQuartier !== null}
+                    filtreActif={filtreQuartier !== null || (filtreRoleActif && roleId !== "")}
+                    onRefresh={refetch}
                     onUpdate={updateUser}
                     onDelete={deleteUser}
                     onView={(id) => console.log("Voir user", id)}

@@ -51,3 +51,9 @@ export const useCatalogue = () => useChargement(() => appelApi("/permissions/cat
 export const useRolesUtilisateur = (userId) =>
     useChargement(() => lireRolesUtilisateur(userId), `roles-user:${userId}`, userId != null);
 export const useJournal = (params) => useChargement(() => lireJournal(params), `journal:${chaineRequete(params)}`);
+
+// Noms des cellules (id -> nom), pour afficher « Responsable de cellule (Yopougon) » ; rien si inactif.
+export function useCellulesNoms(actif) {
+    const { data } = useChargement(() => appelApi("/cellules/all"), "cellules-noms", actif);
+    return new Map((data?.data ?? []).map((c) => [Number(c.id), c.name]));
+}

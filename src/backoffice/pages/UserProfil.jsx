@@ -8,6 +8,7 @@ import MotDePasseModal from "../components/MotDePasseModal";
 import BoutonRetour from "../components/BoutonRetour";
 import { useAuth } from "../hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
+import RolesDuCompte from "../components/roles/RolesDuCompte";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
 import { libelleLieuUtilisateur } from "../utils/referentiel";
@@ -28,7 +29,7 @@ export default function UserProfil() {
     const [isToggleOpen, setIsToggleOpen] = useState(false);
     const [isMdpOpen, setIsMdpOpen] = useState(false);
     const { user: moi } = useAuth();
-    const { peut } = usePermissions();
+    const { peut, nouveau, superAdmin } = usePermissions();
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState("");
 
@@ -238,12 +239,16 @@ export default function UserProfil() {
                             <p className="text-gray-700">
                                 Quartier : {libelleLieuUtilisateur(user) || "non renseigné"}
                             </p>
-                            <p className="text-gray-700">
-                                Rôle :{" "}
-                                <span className="font-semibold">
-                                    {user.role}
-                                </span>
-                            </p>
+                            {nouveau && superAdmin ? (
+                                <RolesDuCompte userId={user.id} />
+                            ) : (
+                                <p className="text-gray-700">
+                                    Rôle :{" "}
+                                    <span className="font-semibold">
+                                        {user.role}
+                                    </span>
+                                </p>
+                            )}
                             <p className="text-gray-500 text-sm">
                                 Inscrit le :{" "}
                                 {new Date(user.createdAt).toLocaleDateString()}

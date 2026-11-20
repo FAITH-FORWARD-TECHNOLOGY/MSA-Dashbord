@@ -4,6 +4,9 @@ import {
     attributionsDepuisFormulaire,
     erreurFormulaire,
     formulaireDepuisAttributions,
+    formulaireModifie,
+    idUtilisateurCree,
+    libelleRole,
     messageDernierSuperAdmin,
     roleMembre,
 } from "./attributionsRoles.js";
@@ -59,4 +62,23 @@ test("journal : libellé français et alerte sous 2 super admins", () => {
     assert.equal(alerteSuperAdmins(roles), true);
     assert.equal(alerteSuperAdmins([{ ...roles[0], nbUtilisateurs: 2 }]), false);
     assert.equal(alerteSuperAdmins([]), false);
+});
+
+test("id du compte créé : plusieurs formes de réponse, sinon null", () => {
+    assert.equal(idUtilisateurCree({ id: 7 }), 7);
+    assert.equal(idUtilisateurCree({ data: { user: { id: "9" } } }), 9);
+    assert.equal(idUtilisateurCree({ user: { id: 3 } }), 3);
+    assert.equal(idUtilisateurCree(true), null);
+    assert.equal(idUtilisateurCree(null), null);
+});
+
+test("formulaire modifié : l'ordre des cellules ne compte pas", () => {
+    const a = { appRoleId: 3, appCellules: [1, 2], boRoleId: null, conservees: [] };
+    assert.equal(formulaireModifie(a, { ...a, appCellules: [2, 1] }), false);
+    assert.equal(formulaireModifie(a, { ...a, boRoleId: 1 }), true);
+});
+
+test("libellé d'un rôle de liste avec le nom de la cellule", () => {
+    assert.equal(libelleRole({ nom: "Responsable de cellule", celluleId: 12 }, new Map([[12, "Yopougon"]])), "Responsable de cellule (Yopougon)");
+    assert.equal(libelleRole({ nom: "Membre", celluleId: null }, new Map()), "Membre");
 });
