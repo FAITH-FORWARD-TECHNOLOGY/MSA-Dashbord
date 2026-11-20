@@ -3,7 +3,8 @@ import { formulaireDepuisAttributions } from "../utils/attributionsRoles";
 import { useListeRoles, useRolesUtilisateur } from "./useRoles";
 
 // Valeur initiale du formulaire (rôles du compte, ou Membre pour un nouveau compte).
-// Rend { roles, form, setForm, chargement, erreur } ; form reste null tant que tout n'est pas chargé.
+// Rend { roles, form, setForm, chargement, erreur, repli } ; repli = GET /roles a échoué (contrat 6.10),
+// les formulaires reviennent alors au select USER / ADMIN ; form reste null tant que tout n'est pas chargé.
 export function useFormulaireRoles(userId, actif) {
     const roles = useListeRoles(undefined, actif);
     const attributions = useRolesUtilisateur(actif ? (userId ?? null) : null);
@@ -24,6 +25,7 @@ export function useFormulaireRoles(userId, actif) {
         initial,
         setForm,
         chargement: roles.loading || (userId != null && attributions.loading),
+        repli: Boolean(actif && roles.error),
         erreur: roles.error || (userId != null ? attributions.error : ""),
         recharger: () => {
             roles.recharger();

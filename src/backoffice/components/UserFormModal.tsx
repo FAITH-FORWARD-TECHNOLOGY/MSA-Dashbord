@@ -7,7 +7,6 @@ import {
     Lock,
     Globe,
     MapPin,
-    Shield,
 } from "lucide-react";
 import { Cellule, Pays } from "../types/user";
 import { useUsers } from "../hooks/useUsers";
@@ -17,14 +16,15 @@ import QuartierResidenceField from "./referentiel/QuartierResidenceField";
 import { corpsLieu } from "../utils/referentiel";
 import { usePermissions } from "../hooks/usePermissions";
 import { remplacerRolesUtilisateur } from "../hooks/useRoles";
-import { appelApi } from "../hooks/useReferentiel";
-import RolesUtilisateurChamp from "./roles/RolesUtilisateurChamp";
+import BlocRolesUtilisateur from "./roles/BlocRolesUtilisateur";
 import { useFormulaireRoles } from "../hooks/useFormulaireRoles";
 import {
     attributionsDepuisFormulaire,
+    corpsSansRole,
     erreurFormulaire,
     idUtilisateurCree,
     messageDernierSuperAdmin,
+    messageErreur,
 } from "../utils/attributionsRoles";
 
 type UserFormModalProps = {
@@ -43,8 +43,15 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
     const { nouveau, superAdmin } = usePermissions();
     const rolesActifs = nouveau && superAdmin;
     const roleForm = useFormulaireRoles(undefined, rolesActifs);
+    // GET /roles en échec : retour au select USER / ADMIN (contrat 6.10).
+    const enModeRoles = rolesActifs && !roleForm.repli;
     // Compte déjà créé quand seule l'attribution des rôles a échoué (nouvel essai sans recréer).
     const [creeId, setCreeId] = useState<number | null>(null);
+    // Compte créé mais identifiant absent de la réponse : rien à réessayer ici.
+    const [creeSansId, setCreeSansId] = useState(false);
+    // Fermer après une création partielle rafraîchit quand même la liste.
+    const fermer = creeId !== null || creeSansId ? onSuccess : onClose;
+    const rolesPrets = !enModeRoles || roleForm.form !== null;
     const [erreurCellules, setErreurCellules] = useState("");
 
     const [formData, setFormData] = useState({
@@ -143,6 +150,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
 
         // Quartier de résidence (facultatif).
         Object.assign(dataToSend, corpsLieu(quartier));
+        // Mode rôles : `role` ne part jamais, le serveur le recalcule.
+        const corps = corpsSansRole(dataToSend, enModeRoles);
 
         // Tout compte créé depuis le dashboard admin est activé directement —
         // pas de flow de confirmation email à passer comme pour le signup public.
@@ -164,7 +173,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         }
 
         setErreurCellules("");
-        if (rolesActifs && roleForm.form) {
+        if (enModeRoles && roleForm.form) {
             const e2 = erreurFormulaire(roleForm.form, roleForm.roles);
             if (e2) {
                 setErreurCellules(e2);
@@ -176,22 +185,22 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
         try {
             let id = creeId;
             if (id === null) {
-                const reponse = await createUser(dataToSend);
+                const reponse = await createUser(corps);
                 id = idUtilisateurCree(reponse);
-                if (rolesActifs && roleForm.form && id === null) {
-                    // Réponse sans identifiant : on retrouve le compte par son email.
-                    const liste = await appelApi("/users");
-                    id = (Array.isArray(liste) ? liste : []).find((u: any) => u.email === dataToSend.email)?.id ?? null;
+                if (enModeRoles && id === null) {
+                    setCreeSansId(true);
+                    setError("Compte créé mais rôles non attribués : ouvrez sa fiche pour les attribuer.");
+                    return;
                 }
             }
-            if (rolesActifs && roleForm.form && id !== null) {
+            if (enModeRoles && roleForm.form && id !== null) {
                 setCreeId(id);
                 try {
                     await remplacerRolesUtilisateur(id, attributionsDepuisFormulaire(roleForm.form, roleForm.roles));
-                } catch (errRoles: any) {
+                } catch (errRoles: unknown) {
                     setError(
                         `Le compte est créé, mais ses rôles n'ont pas pu être attribués : ${
-                            messageDernierSuperAdmin(errRoles?.message) || "erreur inconnue"
+                            messageDernierSuperAdmin(messageErreur(errRoles)) || "erreur inconnue"
                         }. Corrigez puis réessayez.`,
                     );
                     return;
@@ -209,15 +218,14 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                 phoneNumber: "",
                 role: "USER",
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             // createUser propage une `Error` avec le message renvoyé par
             // le backend (cf. useUsers.js). On l'utilise directement
             // plutôt que le placeholder générique pour aider l'admin à
             // comprendre la cause (email déjà utilisé, cellule introuvable,
             // etc.).
             setError(
-                err?.message ||
-                err?.response?.data?.message ||
+                messageErreur(err) ||
                 "Erreur lors de la création de l'utilisateur"
             );
         } finally {
@@ -234,7 +242,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                         Créer un utilisateur
                     </h3>
                     <button
-                        onClick={onClose}
+                        onClick={fermer}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         <X className="w-5 h-5" />
@@ -383,41 +391,14 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                             )}
                         </div>
 
-                        {!nouveau && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    <Shield className="w-4 h-4 inline mr-1" />
-                                    Rôle
-                                </label>
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                >
-                                    <option value="USER">👤 Utilisateur</option>
-                                    <option value="ADMIN">🛡️ Admin</option>
-                                </select>
-                            </div>
-                        )}
-                        {rolesActifs &&
-                            (roleForm.chargement && !roleForm.form ? (
-                                <p className="text-sm text-gray-500" role="status">Chargement des rôles…</p>
-                            ) : roleForm.erreur ? (
-                                <p role="alert" className="text-sm text-red-600">
-                                    Rôles indisponibles : {roleForm.erreur}
-                                </p>
-                            ) : (
-                                roleForm.form && (
-                                    <RolesUtilisateurChamp
-                                        roles={roleForm.roles}
-                                        form={roleForm.form}
-                                        onChange={roleForm.setForm}
-                                        cellules={cellules as any[]}
-                                        erreurCellules={erreurCellules}
-                                    />
-                                )
-                            ))}
+                        <BlocRolesUtilisateur
+                            rolesActifs={rolesActifs}
+                            roleForm={roleForm}
+                            cellules={cellules as Cellule[]}
+                            erreurCellules={erreurCellules}
+                            role={formData.role}
+                            onRoleChange={handleChange}
+                        />
 
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
@@ -428,14 +409,14 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                         <div className="flex justify-end gap-3 pt-4">
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={fermer}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
                                 Annuler
                             </button>
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || !rolesPrets || creeSansId}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading

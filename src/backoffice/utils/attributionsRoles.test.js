@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
     attributionsDepuisFormulaire,
+    corpsSansRole,
     erreurFormulaire,
     formulaireDepuisAttributions,
     formulaireModifie,
@@ -64,12 +65,23 @@ test("journal : libellé français et alerte sous 2 super admins", () => {
     assert.equal(alerteSuperAdmins([]), false);
 });
 
-test("id du compte créé : plusieurs formes de réponse, sinon null", () => {
-    assert.equal(idUtilisateurCree({ id: 7 }), 7);
-    assert.equal(idUtilisateurCree({ data: { user: { id: "9" } } }), 9);
-    assert.equal(idUtilisateurCree({ user: { id: 3 } }), 3);
+test("id du compte créé : uniquement data.user.id, sinon null", () => {
+    assert.equal(idUtilisateurCree({ data: { user: { id: 9 } } }), 9);
+    assert.equal(idUtilisateurCree({ id: 7 }), null);
+    assert.equal(idUtilisateurCree({ user: { id: 3 } }), null);
+    assert.equal(idUtilisateurCree({ data: { id: 4 } }), null);
+    assert.equal(idUtilisateurCree({ data: { user: {} } }), null);
     assert.equal(idUtilisateurCree(true), null);
     assert.equal(idUtilisateurCree(null), null);
+});
+
+test("corps de modification en mode rôles : jamais de role ; en repli, role conservé", () => {
+    const corps = { nom: "A", email: "a@b.c", paysId: 1, celluleId: 4, role: "ADMIN" };
+    const envoye = corpsSansRole(corps, true);
+    assert.equal("role" in envoye, false);
+    assert.deepEqual(envoye, { nom: "A", email: "a@b.c", paysId: 1, celluleId: 4 });
+    assert.equal(corpsSansRole(corps, false).role, "ADMIN");
+    assert.equal(corps.role, "ADMIN");
 });
 
 test("formulaire modifié : l'ordre des cellules ne compte pas", () => {

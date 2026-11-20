@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, User, Mail, Phone, Globe, MapPin, Shield } from "lucide-react";
-import { User as UserType } from "../types/user";
+import { X, User, Mail, Phone, Globe, MapPin } from "lucide-react";
+import { Cellule, User as UserType } from "../types/user";
 import { usePays } from "../hooks/usePays";
 import { useCellules } from "../hooks/useCellules";
 import QuartierResidenceField from "./referentiel/QuartierResidenceField";
 import { corpsLieu, lieuUtilisateur, quartierUtilisateur } from "../utils/referentiel";
 import { usePermissions, rafraichirPermissions } from "../hooks/usePermissions";
 import { remplacerRolesUtilisateur } from "../hooks/useRoles";
-import RolesUtilisateurChamp from "./roles/RolesUtilisateurChamp";
+import BlocRolesUtilisateur from "./roles/BlocRolesUtilisateur";
 import { useFormulaireRoles } from "../hooks/useFormulaireRoles";
 import {
     attributionsDepuisFormulaire,
+    corpsSansRole,
     erreurFormulaire,
     formulaireModifie,
     messageDernierSuperAdmin,
+    messageErreur,
 } from "../utils/attributionsRoles";
 
 type EditUserModalProps = {
@@ -33,6 +35,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     const { nouveau, superAdmin, session } = usePermissions();
     const rolesActifs = nouveau && superAdmin;
     const roleForm = useFormulaireRoles(user.id, rolesActifs);
+    // GET /roles en échec : retour au select USER / ADMIN (contrat 6.10).
+    const enModeRoles = rolesActifs && !roleForm.repli;
     const [erreurCellules, setErreurCellules] = useState("");
     // Le formulaire défile : l'erreur (en haut) est ramenée à l'écran.
     const refErreur = useRef<HTMLDivElement>(null);
@@ -122,6 +126,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
         // Quartier de résidence : absent du corps s'il n'a pas changé.
         Object.assign(dataToSend, corpsLieu(quartier, quartierInitial));
+        // Mode rôles : `role` ne part jamais, le serveur le recalcule.
+        const corps = corpsSansRole(dataToSend, enModeRoles);
 
         setErreurCellules("");
         const rolesChanges =
@@ -140,18 +146,18 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             if (rolesChanges && roleForm.form) {
                 try {
                     await remplacerRolesUtilisateur(user.id, attributionsDepuisFormulaire(roleForm.form, roleForm.roles));
-                } catch (errRoles: any) {
-                    setError(messageDernierSuperAdmin(errRoles?.message) || "Attribution des rôles impossible.");
+                } catch (errRoles: unknown) {
+                    setError(messageDernierSuperAdmin(messageErreur(errRoles)) || "Attribution des rôles impossible.");
                     return;
                 }
                 // Mon propre rôle a pu changer : menu et boutons se mettent à jour.
                 if (Number(session?.id) === Number(user.id)) rafraichirPermissions();
             }
-            await onSave(dataToSend);
+            await onSave(corps);
             onClose();
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Message du serveur affiché tel quel (quartier inconnu, email déjà pris…).
-            setError(err?.message || "Erreur lors de la modification de l'utilisateur");
+            setError(messageErreur(err) || "Erreur lors de la modification de l'utilisateur");
         } finally {
             setIsLoading(false);
         }
@@ -316,41 +322,14 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                             )}
                         </div>
 
-                        {!nouveau && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    <Shield className="w-4 h-4 inline mr-1" />
-                                    Rôle
-                                </label>
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                >
-                                    <option value="USER">👤 Utilisateur</option>
-                                    <option value="ADMIN">🛡️ Admin</option>
-                                </select>
-                            </div>
-                        )}
-                        {rolesActifs &&
-                            (roleForm.chargement && !roleForm.form ? (
-                                <p className="text-sm text-gray-500" role="status">Chargement des rôles…</p>
-                            ) : roleForm.erreur ? (
-                                <p role="alert" className="text-sm text-red-600">
-                                    Rôles indisponibles : {roleForm.erreur}
-                                </p>
-                            ) : (
-                                roleForm.form && (
-                                    <RolesUtilisateurChamp
-                                        roles={roleForm.roles}
-                                        form={roleForm.form}
-                                        onChange={roleForm.setForm}
-                                        cellules={cellules as any[]}
-                                        erreurCellules={erreurCellules}
-                                    />
-                                )
-                            ))}
+                        <BlocRolesUtilisateur
+                            rolesActifs={rolesActifs}
+                            roleForm={roleForm}
+                            cellules={cellules as Cellule[]}
+                            erreurCellules={erreurCellules}
+                            role={formData.role}
+                            onRoleChange={handleChange}
+                        />
 
                         <div className="flex justify-end gap-3 pt-4">
                             <button

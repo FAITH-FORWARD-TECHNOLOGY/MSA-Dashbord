@@ -59,11 +59,20 @@ export function messageDernierSuperAdmin(message) {
         : message;
 }
 
-// Identifiant du compte dans la réponse de la création (forme non figée) ; null si introuvable.
+// Identifiant du compte créé : `data.user.id` (contrat 6.4) ; null s'il manque.
 export function idUtilisateurCree(reponse) {
-    const candidats = [reponse?.id, reponse?.user?.id, reponse?.data?.id, reponse?.data?.user?.id];
-    const id = candidats.find((c) => Number.isInteger(Number(c)) && c !== null && c !== undefined && c !== "");
-    return id === undefined ? null : Number(id);
+    const id = reponse?.data?.user?.id;
+    return Number.isInteger(id) ? id : null;
+}
+
+// Texte d'une erreur attrapée (Error ou autre) ; chaîne vide si rien d'exploitable.
+export const messageErreur = (e) => (typeof e?.message === "string" ? e.message : "");
+
+// Corps de création / modification : en mode rôles, `role` ne part jamais (le serveur le recalcule).
+export function corpsSansRole(corps, modeRoles) {
+    if (!modeRoles) return corps;
+    const { role: _role, ...reste } = corps;
+    return reste;
 }
 
 // Formulaire modifié par rapport à l'état chargé (évite un PUT inutile).
