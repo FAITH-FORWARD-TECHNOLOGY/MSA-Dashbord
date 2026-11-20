@@ -22,7 +22,7 @@ export const FILE_UPLOAD_URL =
 // En-tetes avec le Bearer token de l'admin connecte (stocke par useAuth dans
 // localStorage.jobhubs_auth.user.token). Pour les endpoints proteges (plans,
 // verset du jour), qui exigent un compte authentifie cote backend.
-function lireJeton() {
+export function lireJeton() {
     try {
         const stored = localStorage.getItem("jobhubs_auth");
         return stored ? (JSON.parse(stored)?.user?.token ?? "") : "";

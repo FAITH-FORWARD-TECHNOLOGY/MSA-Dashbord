@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { BIBLE_BOOKS } from "../config/bibleBooks";
+import AnnouncementImageField from "./AnnouncementImageField";
+import { uploadImage } from "../utils/uploadImage";
+import { buildPlanPayload } from "../utils/readingPlans";
 
 const SCOPES = [
     { value: "WHOLE", label: "Toute la Bible" },
@@ -22,6 +25,8 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
     const [durationDays, setDurationDays] = useState(plan?.durationDays ?? 365);
     const [isActive, setIsActive] = useState(plan?.isActive ?? true);
     const [busy, setBusy] = useState(false);
+    // Envoi d'image en cours : Enregistrer reste bloqué.
+    const [uploading, setUploading] = useState(false);
     const [err, setErr] = useState("");
 
     const toggleBook = (nr) =>
@@ -40,14 +45,9 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
             return setErr("Choisis au moins un livre.");
         setBusy(true);
         try {
-            await onSubmit({
-                title: title.trim(),
-                imageUrl: imageUrl.trim() || null,
-                scope,
-                bookNumbers: scope === "SPECIFIC" ? [...books] : [],
-                durationDays: Number(durationDays),
-                isActive,
-            });
+            await onSubmit(
+                buildPlanPayload({ title, imageUrl, scope, books, durationDays, isActive }),
+            );
             onClose();
         } catch (e) {
             setErr(e.message || "Erreur");
@@ -76,13 +76,24 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
                         placeholder="La Bible en 1 an"
                     />
 
-                    <label className={labelCls}>Image (URL, optionnel)</label>
-                    <input
-                        className={inputCls}
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        placeholder="https://..."
-                    />
+                    <div role="group" aria-labelledby="plan-imageUrl-label">
+                        <span id="plan-imageUrl-label" className={labelCls}>
+                            Image (optionnel)
+                        </span>
+                        <AnnouncementImageField
+                            id="plan-imageUrl"
+                            previewAlt="Aperçu de l’image du plan"
+                            value={imageUrl}
+                            onChange={setImageUrl}
+                            onUpload={uploadImage}
+                            onBusyChange={setUploading}
+                            disabled={busy}
+                            describedBy="plan-imageUrl-aide"
+                        />
+                        <p id="plan-imageUrl-aide" className="mt-1 text-xs text-gray-500">
+                            JPEG, PNG ou WebP, 5 Mo maximum.
+                        </p>
+                    </div>
 
                     <label className={labelCls}>Type de lecture</label>
                     <select
@@ -144,7 +155,7 @@ export default function ReadingPlanFormModal({ plan, onClose, onSubmit }) {
                         <button
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
                             onClick={submit}
-                            disabled={busy}
+                            disabled={busy || uploading}
                         >
                             {busy ? "Enregistrement..." : "Enregistrer"}
                         </button>
