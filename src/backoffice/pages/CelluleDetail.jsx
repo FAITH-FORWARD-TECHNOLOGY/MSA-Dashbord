@@ -509,7 +509,7 @@ export default function CelluleDetail() {
                                             disabled={estResponsable(u, leaderId)}
                                             onChange={() => setSelection((prec) => basculer(prec, u.id))}
                                             aria-label={`Sélectionner ${u.nom} ${u.prenom}`}
-                                            className="h-4 w-4 flex-shrink-0 rounded border-gray-300 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                            className="h-4 w-4 flex-shrink-0 rounded border-gray-300 disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                         />
                                     )}
                                     <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -605,6 +605,8 @@ export default function CelluleDetail() {
                     setSelection(new Set());
                     setResultat(libelleResultat(res));
                     fetchData(true);
+                    // Répartition rechargée en même temps (données gardées, sans clignotement).
+                    repartition.recharger();
                 }}
             />
             )}
