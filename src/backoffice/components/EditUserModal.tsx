@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, User, Mail, Phone, Globe, MapPin, Shield } from "lucide-react";
 import { User as UserType } from "../types/user";
 import { usePays } from "../hooks/usePays";
@@ -34,6 +34,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     const rolesActifs = nouveau && superAdmin;
     const roleForm = useFormulaireRoles(user.id, rolesActifs);
     const [erreurCellules, setErreurCellules] = useState("");
+    // Le formulaire défile : l'erreur (en haut) est ramenée à l'écran.
+    const refErreur = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState({
         nom: user.nom || "",
@@ -50,6 +52,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     const quartierInitial = quartierUtilisateur(user);
     const [quartier, setQuartier] = useState<any>(quartierInitial);
     const communeSeule = !quartierInitial ? lieuUtilisateur(user)?.commune?.nom : "";
+
+    useEffect(() => {
+        if (error) refErreur.current?.scrollIntoView({ block: "nearest" });
+    }, [error]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -168,7 +174,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 </div>
                 <div className="p-6">
                     {error && (
-                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                        <div ref={refErreur} role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
                             {error}
                         </div>
                     )}
