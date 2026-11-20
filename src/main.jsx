@@ -22,8 +22,6 @@ import CommunicationPage from "./backoffice/pages/CommunicationPage.jsx";
 // Plans de lecture + verset du jour (pilotage du module Bible mobile).
 import ReadingPlansPage from "./backoffice/pages/ReadingPlansPage.jsx";
 import DailyVersePage from "./backoffice/pages/DailyVersePage.jsx";
-// Catégories des sujets de prière + délai d'archivage (admin).
-import PrayerCategoriesPage from "./backoffice/pages/PrayerCategoriesPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -126,10 +124,13 @@ const router = createBrowserRouter([
                 path: "communication",
                 element: <CommunicationPage />,
             },
-            // Sujets de prière : catégories configurables + archivage automatique.
+            // Sujets de prière : catégories configurables + archivage automatique (chargée à la demande).
             {
                 path: "sujets-de-priere",
-                element: <PrayerCategoriesPage />,
+                lazy: () =>
+                    import("./backoffice/pages/PrayerCategoriesPage.jsx").then(
+                        (m) => ({ Component: m.default })
+                    ),
             },
             {
                 path: "login",

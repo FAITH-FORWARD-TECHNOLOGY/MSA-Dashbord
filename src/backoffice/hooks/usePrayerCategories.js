@@ -11,7 +11,7 @@ async function erreurDe(response) {
 // Catégories de sujets de prière (admin) + délai d'archivage automatique.
 export function usePrayerCategories() {
     const [categories, setCategories] = useState([]);
-    const [jours, setJours] = useState(ARCHIVAGE_DEFAUT);
+    const [jours, setJours] = useState(null); // null : valeur réelle pas encore chargée
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+    delaiModifiable,
     estVerrouillee,
     validerJours,
     validerLibelle,
@@ -25,4 +26,12 @@ test("libellé : 1 à 40 caractères", () => {
 test("seule « Autre » est verrouillée", () => {
     assert.equal(estVerrouillee({ cle: "Autre" }), true);
     assert.equal(estVerrouillee({ cle: "Famille" }), false);
+});
+
+test("champ délai bloqué tant que la valeur réelle n'est pas chargée", () => {
+    assert.equal(delaiModifiable(null, true), false); // chargement initial
+    assert.equal(delaiModifiable(null, false), false); // chargement en erreur
+    assert.equal(delaiModifiable(30, true), false); // rechargement en cours
+    assert.equal(delaiModifiable(30, false), true);
+    assert.equal(delaiModifiable(45, false), true);
 });

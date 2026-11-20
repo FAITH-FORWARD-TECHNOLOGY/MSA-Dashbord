@@ -29,3 +29,6 @@ export function validerLibelle(value) {
 
 // « Autre » est verrouillée : ni renommage ni désactivation.
 export const estVerrouillee = (categorie) => categorie.cle === CLE_AUTRE;
+
+// Le champ délai n'est modifiable qu'une fois la vraie valeur chargée (jamais le défaut).
+export const delaiModifiable = (jours, loading) => jours !== null && !loading;

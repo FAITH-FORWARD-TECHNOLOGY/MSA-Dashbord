@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Pencil, X } from "lucide-react";
 import { usePrayerCategories } from "../hooks/usePrayerCategories";
+import { Squelette } from "../components/statistiques/StatsUi";
 import { moveId } from "../utils/announcements";
 import {
     ARCHIVAGE_MAX,
     ARCHIVAGE_MIN,
     LIBELLE_MAX,
+    delaiModifiable,
     estVerrouillee,
     validerJours,
     validerLibelle,
@@ -31,8 +33,23 @@ const PrayerCategoriesPage = () => {
     const [busy, setBusy] = useState(false);
 
     const [joursSaisis, setJoursSaisis] = useState(null);
-    const valeurJours = joursSaisis ?? String(jours);
-    const erreurJours = validerJours(valeurJours);
+    const delaiOk = delaiModifiable(jours, loading);
+    const valeurJours = joursSaisis ?? (jours === null ? "" : String(jours));
+    const erreurJours = delaiOk ? validerJours(valeurJours) : "";
+
+    // Focus rendu au bouton crayon quand le renommage se ferme.
+    const crayons = useRef({});
+    const [focusCrayon, setFocusCrayon] = useState(null);
+    useEffect(() => {
+        if (focusCrayon !== null && editId === null) {
+            crayons.current[focusCrayon]?.focus();
+            setFocusCrayon(null);
+        }
+    }, [focusCrayon, editId]);
+    const fermerEdition = (id) => {
+        setEditId(null);
+        setFocusCrayon(id);
+    };
 
     const executer = async (action, succes) => {
         setBusy(true);
@@ -67,9 +84,9 @@ const PrayerCategoriesPage = () => {
     const validerEdition = async (c) => {
         const err = validerLibelle(editLibelle);
         if (err) return setMessage({ type: "erreur", texte: err });
-        if (editLibelle.trim() === c.libelle) return setEditId(null);
+        if (editLibelle.trim() === c.libelle) return fermerEdition(c.id);
         if (await executer(() => modifier(c.id, { libelle: editLibelle.trim() }), "Catégorie renommée.")) {
-            setEditId(null);
+            fermerEdition(c.id);
         }
     };
 
@@ -83,7 +100,7 @@ const PrayerCategoriesPage = () => {
 
     const sauverJours = async (e) => {
         e.preventDefault();
-        if (erreurJours) return;
+        if (!delaiOk || erreurJours) return;
         if (await executer(() => enregistrerJours(valeurJours.trim()), "Délai d'archivage enregistré.")) {
             setJoursSaisis(null);
         }
@@ -127,13 +144,21 @@ const PrayerCategoriesPage = () => {
                             aria-invalid={erreurJours ? "true" : "false"}
                             aria-describedby="prieres-jours-aide"
                             className={`w-32 ${inputClass}`}
-                            disabled={loading}
+                            disabled={!delaiOk}
                         />
                     </div>
-                    <button type="submit" className={primaryBtn} disabled={busy || loading || Boolean(erreurJours)}>
+                    <button type="submit" className={primaryBtn} disabled={busy || !delaiOk || Boolean(erreurJours)}>
                         Enregistrer
                     </button>
                 </form>
+                {!loading && jours === null && (
+                    <p className="text-sm text-red-600 mt-2" role="alert">
+                        Délai actuel non chargé : modification impossible.{" "}
+                        <button type="button" onClick={recharger} className={`underline ${FOCUS}`}>
+                            Réessayer
+                        </button>
+                    </p>
+                )}
                 <p id="prieres-jours-aide" className={`text-xs mt-2 ${erreurJours ? "text-red-600" : "text-gray-500"}`}>
                     {erreurJours || `Entre ${ARCHIVAGE_MIN} et ${ARCHIVAGE_MAX} jours (30 par défaut). Calculé à l'affichage dans l'app.`}
                 </p>
@@ -164,7 +189,7 @@ const PrayerCategoriesPage = () => {
                     </button>
                 </form>
 
-                {loading && <p className="text-blue-600" role="status">Chargement…</p>}
+                {loading && <Squelette lignes={3} />}
                 {error && !loading && (
                     <div role="alert" className="text-red-600">
                         <p>{error}</p>
@@ -201,14 +226,14 @@ const PrayerCategoriesPage = () => {
                                                     maxLength={LIBELLE_MAX}
                                                     value={editLibelle}
                                                     onChange={(e) => setEditLibelle(e.target.value)}
-                                                    onKeyDown={(e) => e.key === "Escape" && setEditId(null)}
+                                                    onKeyDown={(e) => e.key === "Escape" && fermerEdition(c.id)}
                                                     className={`w-56 ${inputClass}`}
                                                 />
                                                 <button type="submit" className={iconBtn} disabled={busy}
                                                     aria-label={`Valider le nouveau libellé de « ${c.libelle} »`} title="Valider">
                                                     <Check size={16} aria-hidden="true" />
                                                 </button>
-                                                <button type="button" className={iconBtn} onClick={() => setEditId(null)}
+                                                <button type="button" className={iconBtn} onClick={() => fermerEdition(c.id)}
                                                     aria-label="Annuler le renommage" title="Annuler">
                                                     <X size={16} aria-hidden="true" />
                                                 </button>
@@ -245,7 +270,7 @@ const PrayerCategoriesPage = () => {
                                             aria-label={`Descendre « ${c.libelle} »`} title="Descendre">
                                             <ArrowDown size={16} aria-hidden="true" />
                                         </button>
-                                        <button type="button" className={iconBtn} onClick={() => commencerEdition(c)}
+                                        <button type="button" ref={(el) => { crayons.current[c.id] = el; }} className={iconBtn} onClick={() => commencerEdition(c)}
                                             disabled={busy || verrou || enEdition}
                                             aria-label={verrou ? `« ${c.libelle} » ne peut pas être renommée` : `Renommer « ${c.libelle} »`}
                                             title={verrou ? "Verrouillée" : "Renommer"}>
