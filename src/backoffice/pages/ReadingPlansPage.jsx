@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useReadingPlans } from "../hooks/useReadingPlans";
 import ReadingPlanFormModal from "../components/ReadingPlanFormModal";
+import { usePermissions } from "../hooks/usePermissions";
 
 const SCOPE_LABELS = {
     WHOLE: "Toute la Bible",
@@ -10,6 +11,7 @@ const SCOPE_LABELS = {
 };
 
 const ReadingPlansPage = () => {
+    const { peut } = usePermissions();
     const { plans, loading, error, createPlan, updatePlan, setStatus, deletePlan } =
         useReadingPlans();
     const [editing, setEditing] = useState(null); // plan en cours d'edition
@@ -30,12 +32,14 @@ const ReadingPlansPage = () => {
                 Plans de lecture
             </h2>
 
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
-                onClick={() => setCreating(true)}
-            >
-                Creer un plan
-            </button>
+            {peut("bo.plans.creer") && (
+                <button
+                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+                    onClick={() => setCreating(true)}
+                >
+                    Creer un plan
+                </button>
+            )}
 
             {loading && <p className="text-blue-600">Chargement...</p>}
             {error && <p className="text-red-500">{error}</p>}
@@ -97,28 +101,34 @@ const ReadingPlansPage = () => {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex justify-end gap-3">
-                                            <button
-                                                className="text-blue-600 hover:underline"
-                                                onClick={() => setEditing(p)}
-                                            >
-                                                Editer
-                                            </button>
-                                            <button
-                                                className="text-gray-600 hover:underline"
-                                                onClick={() =>
-                                                    setStatus(p.id, !p.isActive).catch(
-                                                        (e) => alert(e.message)
-                                                    )
-                                                }
-                                            >
-                                                {p.isActive ? "Desactiver" : "Activer"}
-                                            </button>
-                                            <button
-                                                className="text-red-600 hover:underline"
-                                                onClick={() => handleDelete(p)}
-                                            >
-                                                Supprimer
-                                            </button>
+                                            {peut("bo.plans.modifier") && (
+                                                <button
+                                                    className="text-blue-600 hover:underline"
+                                                    onClick={() => setEditing(p)}
+                                                >
+                                                    Editer
+                                                </button>
+                                            )}
+                                            {peut("bo.plans.activer") && (
+                                                <button
+                                                    className="text-gray-600 hover:underline"
+                                                    onClick={() =>
+                                                        setStatus(p.id, !p.isActive).catch(
+                                                            (e) => alert(e.message)
+                                                        )
+                                                    }
+                                                >
+                                                    {p.isActive ? "Desactiver" : "Activer"}
+                                                </button>
+                                            )}
+                                            {peut("bo.plans.supprimer") && (
+                                                <button
+                                                    className="text-red-600 hover:underline"
+                                                    onClick={() => handleDelete(p)}
+                                                >
+                                                    Supprimer
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

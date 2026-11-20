@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Trash2,
     Pencil,
@@ -11,6 +11,7 @@ import { useCommunication } from "../hooks/useCommunication";
 import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementTable from "../components/AnnouncementTable";
 import { liveScheduleHint, liveScheduleLabels } from "../utils/lives";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Icônes connues de l'app (comm_models.dart, _iconFor) : garder les deux listes alignées.
 const RUBRIQUE_ICONES = [
@@ -30,6 +31,13 @@ const RUBRIQUE_ICONES = [
 
 // Page "Communication" du back-office : médiathèque (vidéos) et directs.
 // Chaque contenu = un lien YouTube saisi ici ; l'app mobile ouvre ce lien.
+
+const PERMISSION_SECTION = {
+    videos: "bo.communication.mediatheque",
+    lives: "bo.communication.directs",
+    announcements: "bo.communication.annonces",
+    rubriques: "bo.communication.rubriques",
+};
 
 const emptyRubrique = {
     name: "",
@@ -107,7 +115,13 @@ const CommunicationPage = () => {
         resolveLink,
     } = useCommunication();
 
+    // Chaque section de la page a sa permission ; la première autorisée s'ouvre.
+    const { peut } = usePermissions();
+    const sectionsAutorisees = Object.keys(PERMISSION_SECTION).filter((t) => peut(PERMISSION_SECTION[t]));
     const [tab, setTab] = useState("videos");
+    useEffect(() => {
+        if (sectionsAutorisees.length > 0 && !sectionsAutorisees.includes(tab)) setTab(sectionsAutorisees[0]);
+    }, [sectionsAutorisees.join(","), tab]); // eslint-disable-line react-hooks/exhaustive-deps
     const [form, setForm] = useState(null); // {kind, data, id}
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
@@ -279,30 +293,38 @@ const CommunicationPage = () => {
             </p>
 
             <div className="flex flex-wrap gap-3 mb-4">
-                <button
-                    className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "videos" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setTab("videos")}
-                >
-                    Médiathèque ({videos.length})
-                </button>
-                <button
-                    className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "lives" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setTab("lives")}
-                >
-                    Directs ({lives.length})
-                </button>
-                <button
-                    className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "announcements" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setTab("announcements")}
-                >
-                    Annonces ({announcements.length})
-                </button>
-                <button
-                    className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "rubriques" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
-                    onClick={() => setTab("rubriques")}
-                >
-                    Rubriques ({rubriques.length})
-                </button>
+                {peut("bo.communication.mediatheque") && (
+                    <button
+                        className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "videos" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                        onClick={() => setTab("videos")}
+                    >
+                        Médiathèque ({videos.length})
+                    </button>
+                )}
+                {peut("bo.communication.directs") && (
+                    <button
+                        className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "lives" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                        onClick={() => setTab("lives")}
+                    >
+                        Directs ({lives.length})
+                    </button>
+                )}
+                {peut("bo.communication.annonces") && (
+                    <button
+                        className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "announcements" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                        onClick={() => setTab("announcements")}
+                    >
+                        Annonces ({announcements.length})
+                    </button>
+                )}
+                {peut("bo.communication.rubriques") && (
+                    <button
+                        className={`px-4 py-2 rounded text-sm font-medium transition ${tab === "rubriques" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"}`}
+                        onClick={() => setTab("rubriques")}
+                    >
+                        Rubriques ({rubriques.length})
+                    </button>
+                )}
                 <div className="flex-1" />
                 <button
                     className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition text-sm font-medium flex items-center gap-2"

@@ -13,6 +13,7 @@ import {
     Users,
 } from "lucide-react";
 import RideDestinationFormModal from "./RideDestinationFormModal";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Mapping type → label/icône/couleur pour le badge de chaque ligne du tableau.
 // Garder en phase avec l'enum RideDestinationType du backend.
@@ -38,6 +39,7 @@ function RideDestinationList({
     onDelete,
     onToggleActive,
 }) {
+    const { peut } = usePermissions();
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [rowLoadingId, setRowLoadingId] = useState(null);
@@ -171,14 +173,16 @@ function RideDestinationList({
                         ))}
                     </select>
                 </div>
-                <button
-                    onClick={exportToCSV}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
-                    title="Exporter CSV"
-                >
-                    <Download className="h-4 w-4 mr-2" />
-                    Exporter CSV
-                </button>
+                {peut("bo.destinations.exporter") && (
+                    <button
+                        onClick={exportToCSV}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+                        title="Exporter CSV"
+                    >
+                        <Download className="h-4 w-4 mr-2" />
+                        Exporter CSV
+                    </button>
+                )}
             </div>
 
             {destinations.length === 0 ? (
@@ -269,7 +273,7 @@ function RideDestinationList({
                                                 <button
                                                     type="button"
                                                     onClick={() => handleToggle(d)}
-                                                    disabled={rowLoadingId === d.id}
+                                                    disabled={rowLoadingId === d.id || !peut("bo.destinations.activer")}
                                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 disabled:opacity-60 ${
                                                         d.isActive
                                                             ? "bg-indigo-600"
@@ -298,28 +302,32 @@ function RideDestinationList({
                                                     : "—"}
                                             </td>
                                             <td className="px-3 py-2 flex gap-2">
-                                                <button
-                                                    onClick={() => setEditing(d)}
-                                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                                                    title="Modifier"
-                                                >
-                                                    <PenIcon
-                                                        className="inline mr-1"
-                                                        size={12}
-                                                    />
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setDeleteTarget(d)
-                                                    }
-                                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                                                    title="Supprimer"
-                                                >
-                                                    <Trash
-                                                        className="inline mr-1"
-                                                        size={12}
-                                                    />
-                                                </button>
+                                                {peut("bo.destinations.modifier") && (
+                                                    <button
+                                                        onClick={() => setEditing(d)}
+                                                        className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                        title="Modifier"
+                                                    >
+                                                        <PenIcon
+                                                            className="inline mr-1"
+                                                            size={12}
+                                                        />
+                                                    </button>
+                                                )}
+                                                {peut("bo.destinations.supprimer") && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setDeleteTarget(d)
+                                                        }
+                                                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                                        title="Supprimer"
+                                                    >
+                                                        <Trash
+                                                            className="inline mr-1"
+                                                            size={12}
+                                                        />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

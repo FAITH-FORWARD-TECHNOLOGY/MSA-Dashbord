@@ -3,11 +3,13 @@ import { Download } from "lucide-react";
 import RideDestinationList from "../components/RideDestinationList";
 import RideDestinationFormModal from "../components/RideDestinationFormModal";
 import { useRideDestinations } from "../hooks/useRideDestinations";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Page "Destinations" du dashboard admin.
 // Calquée sur CategoriePage pour rester homogène avec le reste du backoffice.
 // La modal d'édition est gérée à l'intérieur de la liste (voir RideDestinationList).
 const RideDestinationsPage = () => {
+    const { peut } = usePermissions();
     const [showCreate, setShowCreate] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [syncMessage, setSyncMessage] = useState("");
@@ -49,22 +51,26 @@ const RideDestinationsPage = () => {
 
             {/* Boutons d'action : créer manuellement ou importer depuis les cellules */}
             <div className="flex flex-wrap gap-3 mb-4">
-                <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
-                    onClick={() => setShowCreate(true)}
-                >
-                    Créer une destination
-                </button>
-                <button
-                    className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-                    onClick={handleSync}
-                    disabled={syncing}
-                >
-                    <Download size={16} />
-                    {syncing
-                        ? "Import en cours..."
-                        : "Importer les cellules"}
-                </button>
+                {peut("bo.destinations.creer") && (
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+                        onClick={() => setShowCreate(true)}
+                    >
+                        Créer une destination
+                    </button>
+                )}
+                {peut("bo.destinations.importer_cellules") && (
+                    <button
+                        className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+                        onClick={handleSync}
+                        disabled={syncing}
+                    >
+                        <Download size={16} />
+                        {syncing
+                            ? "Import en cours..."
+                            : "Importer les cellules"}
+                    </button>
+                )}
             </div>
 
             {/* Message de retour après un import */}

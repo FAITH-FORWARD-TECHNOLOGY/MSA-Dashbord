@@ -7,8 +7,10 @@ import {
     Download,
 } from "lucide-react";
 import React, { useState } from "react";
+import { usePermissions } from "../hooks/usePermissions";
 
 function PaysList({ pays }) {
+    const { peut } = usePermissions();
     // États pour la recherche et pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -109,14 +111,16 @@ function PaysList({ pays }) {
                     </div>
 
                     {/* Bouton d'export Excel */}
-                    <button
-                        onClick={exportToExcel}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        title="Exporter vers Excel"
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter Excel
-                    </button>
+                    {peut("bo.pays.exporter") && (
+                        <button
+                            onClick={exportToExcel}
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                            title="Exporter vers Excel"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter Excel
+                        </button>
+                    )}
                 </div>
                 {searchTerm && (
                     <p className="mt-2 text-sm text-gray-500">

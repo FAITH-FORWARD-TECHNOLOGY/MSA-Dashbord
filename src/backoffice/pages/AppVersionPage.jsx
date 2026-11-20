@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAppVersion, VERSION_SETTING_KEYS } from "../hooks/useAppVersion";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Compare deux versions semver "X.Y.Z" — retourne -1 / 0 / 1.
 // Utilisée côté client pour la validation inline (warning si min > latest).
@@ -20,6 +21,8 @@ const compareVersions = (a, b) => {
 // Setting générique. Les 5 clés `app.version.*` / `app.store.*` sont
 // exposées comme un formulaire unique pour rester ergonomique côté admin.
 const AppVersionPage = () => {
+    const { peut } = usePermissions();
+    const peutEnregistrer = peut("bo.versions.enregistrer");
     const { settings, getValue, loading, error, upsertSetting } = useAppVersion();
 
     const [form, setForm] = useState({
@@ -260,7 +263,8 @@ const AppVersionPage = () => {
 
                     <button
                         type="submit"
-                        disabled={!canSave}
+                        disabled={!canSave || !peutEnregistrer}
+                        title={peutEnregistrer ? undefined : "Vous n'avez pas la permission d'enregistrer la configuration."}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {saving ? "Enregistrement..." : "Enregistrer"}

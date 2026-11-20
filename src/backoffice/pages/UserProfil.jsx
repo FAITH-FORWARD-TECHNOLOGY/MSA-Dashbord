@@ -7,6 +7,7 @@ import EditUserModal from "../components/EditUserModal";
 import MotDePasseModal from "../components/MotDePasseModal";
 import BoutonRetour from "../components/BoutonRetour";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
 import { libelleLieuUtilisateur } from "../utils/referentiel";
@@ -27,6 +28,7 @@ export default function UserProfil() {
     const [isToggleOpen, setIsToggleOpen] = useState(false);
     const [isMdpOpen, setIsMdpOpen] = useState(false);
     const { user: moi } = useAuth();
+    const { peut } = usePermissions();
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState("");
 
@@ -197,7 +199,7 @@ export default function UserProfil() {
     const isActive = user.isActive !== false;
     // Admin seulement, sur la fiche d'un membre ou d'un autre admin ; jamais son propre compte (Mon profil).
     const peutChangerMdp =
-        moi?.role === "ADMIN" && Number(moi?.id) !== Number(user.id);
+        peut("bo.utilisateurs.mot_de_passe") && Number(moi?.id) !== Number(user.id);
 
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -251,13 +253,15 @@ export default function UserProfil() {
 
                     {/* Boutons d'action — alignés sur le pattern de UserListe.tsx */}
                     <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                            onClick={() => setIsEditOpen(true)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            <Edit2 className="w-4 h-4 mr-1.5" />
-                            Modifier
-                        </button>
+                        {peut("bo.utilisateurs.modifier") && (
+                            <button
+                                onClick={() => setIsEditOpen(true)}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                <Edit2 className="w-4 h-4 mr-1.5" />
+                                Modifier
+                            </button>
+                        )}
                         {peutChangerMdp && (
                             <button
                                 type="button"
@@ -268,33 +272,37 @@ export default function UserProfil() {
                                 Modifier le mot de passe
                             </button>
                         )}
-                        <button
-                            onClick={() => setIsToggleOpen(true)}
-                            className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                isActive
-                                    ? "bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
-                                    : "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
-                            }`}
-                        >
-                            {isActive ? (
-                                <>
-                                    <PowerOff className="w-4 h-4 mr-1.5" />
-                                    Désactiver
-                                </>
-                            ) : (
-                                <>
-                                    <Power className="w-4 h-4 mr-1.5" />
-                                    Activer
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setIsDeleteOpen(true)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                            <Trash2 className="w-4 h-4 mr-1.5" />
-                            Supprimer
-                        </button>
+                        {peut("bo.utilisateurs.desactiver") && (
+                            <button
+                                onClick={() => setIsToggleOpen(true)}
+                                className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                    isActive
+                                        ? "bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+                                        : "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+                                }`}
+                            >
+                                {isActive ? (
+                                    <>
+                                        <PowerOff className="w-4 h-4 mr-1.5" />
+                                        Désactiver
+                                    </>
+                                ) : (
+                                    <>
+                                        <Power className="w-4 h-4 mr-1.5" />
+                                        Activer
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {peut("bo.utilisateurs.supprimer") && (
+                            <button
+                                onClick={() => setIsDeleteOpen(true)}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                                <Trash2 className="w-4 h-4 mr-1.5" />
+                                Supprimer
+                            </button>
+                        )}
                     </div>
                 </div>
 

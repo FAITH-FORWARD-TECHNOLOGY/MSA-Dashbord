@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { accesBackOfficeRefuse } from '../utils/permissions';
+
+export const MESSAGE_ACCES_REFUSE = "Accès au back-office non autorisé. Contactez un super admin pour obtenir l'accès.";
 
 // Vrai si le JWT est expiré (ou illisible). Evite de rester "connecté" avec un
 // token mort, ce qui provoque des 401 silencieux sur les pages protégées
@@ -69,13 +72,19 @@ export function useAuth() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
+                // 403 : compte sans accès au back-office (rôles et permissions).
+                if (response.status === 403) throw new Error(errorData.message || MESSAGE_ACCES_REFUSE);
                 throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`);
             }
 
             const result = await response.json();
 
             if (result.data) {
+                // Permissions fournies mais sans accès au back-office : pas de session.
+                if (accesBackOfficeRefuse({ ...(result.data.user ?? {}), ...result.data })) {
+                    throw new Error(MESSAGE_ACCES_REFUSE);
+                }
                 // Stocker les données d'authentification
                 const authData = {
                     isAuthenticated: true,

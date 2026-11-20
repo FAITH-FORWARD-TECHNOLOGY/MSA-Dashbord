@@ -4,12 +4,14 @@ import ActiviteList from "../components/ActiviteList";
 import AddActivityModal from "../components/AddActivityForm";
 import EditActivityModal from "../components/EditActivityModal";
 import { API_BASE_URL } from "../config/api";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Page admin des activités : liste + actions CRUD (ajouter, modifier,
 // activer/désactiver, supprimer). Les modals d'ajout et d'édition vivent
 // ici (au niveau de la page) pour partager le state — la liste ne sait
 // que rendre les lignes et déclencher des callbacks.
 function ActivitePage() {
+    const { peut } = usePermissions();
     const [activites, setActivites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -93,13 +95,15 @@ function ActivitePage() {
                 <h2 className="text-2xl font-bold text-gray-800">
                     Gestion des activités
                 </h2>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Ajouter une activité
-                </button>
+                {peut("bo.activites.ajouter") && (
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Ajouter une activité
+                    </button>
+                )}
             </div>
 
             {loading && <p className="text-blue-600">Chargement...</p>}

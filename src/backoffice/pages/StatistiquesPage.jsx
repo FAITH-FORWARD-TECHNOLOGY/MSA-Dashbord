@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { usePermissions } from "../hooks/usePermissions";
 import { CalendarX, CheckCircle2, X } from "lucide-react";
 import {
     telechargerExport,
@@ -46,6 +47,7 @@ const CHAMP =
     "block w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
 
 const StatistiquesPage = () => {
+    const { peut } = usePermissions();
     const cellulesApi = useStatistiquesCellules();
     const [periode, setPeriode] = useState(periodeParDefaut);
     // Cellules cochées (identifiants) ; [] = toutes les cellules.
@@ -219,7 +221,7 @@ const StatistiquesPage = () => {
 
     // Même hauteur que la carte et les exports (ligne en items-stretch).
     const boutonNa =
-        ongletId === "suivi" ? (
+        ongletId === "suivi" && peut("bo.statistiques.marquer_na") ? (
             <button
                 ref={refBoutonNa}
                 type="button"
@@ -304,7 +306,7 @@ const StatistiquesPage = () => {
                 </div>
                 <BarreExport
                     key={onglet.id}
-                    formats={onglet.formats}
+                    formats={peut("bo.statistiques.exporter") ? onglet.formats : []}
                     onExport={exporter}
                     desactive={Boolean(erreurFiltre)}
                     avant={

@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, GitMerge, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import {
     supprimerQuartier,
     useCommunesDuPays,
@@ -63,7 +64,8 @@ function Onglet({ actif, onClick, children, id, controle }) {
 
 export default function QuartiersPage() {
     const { user } = useAuth();
-    const estAdmin = user?.role === "ADMIN";
+    const { peut } = usePermissions();
+    const estAdmin = peut("bo.quartiers.voir");
     const [params, setParams] = useSearchParams();
     const enAttente = params.get("vue") === VUE_ATTENTE;
     // Filtres initiaux portés par le lien (depuis la liste des communes).
@@ -190,14 +192,18 @@ export default function QuartiersPage() {
                 </div>
                 {/* Boutons sur une ligne, texte jamais coupé ; en colonne sur téléphone. */}
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-                    <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
-                        <Upload className="size-4" aria-hidden="true" />
-                        {IMPORTS.quartiers.bouton}
-                    </button>
-                    <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
-                        <Plus className="size-4" aria-hidden="true" />
-                        Ajouter un quartier
-                    </button>
+                    {peut("bo.quartiers.importer") && (
+                        <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
+                            <Upload className="size-4" aria-hidden="true" />
+                            {IMPORTS.quartiers.bouton}
+                        </button>
+                    )}
+                    {peut("bo.quartiers.ajouter") && (
+                        <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
+                            <Plus className="size-4" aria-hidden="true" />
+                            Ajouter un quartier
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -404,7 +410,7 @@ export default function QuartiersPage() {
                                             </td>
                                             <td className="px-4 py-2">
                                                 <div className="flex justify-end gap-2">
-                                                    {enAttente && (
+                                                    {enAttente && peut("bo.quartiers.modifier") && (
                                                         <button
                                                             type="button"
                                                             className={BOUTON_LIGNE}
@@ -415,35 +421,41 @@ export default function QuartiersPage() {
                                                         >
                                                             <Check className="size-4 text-green-700" aria-hidden="true" />
                                                             <span className="hidden xl:inline">Valider</span>
+                                                            </button>
+                                                    )}
+                                                    {peut("bo.quartiers.modifier") && (
+                                                        <button
+                                                            type="button"
+                                                            className={BOUTON_LIGNE}
+                                                            onClick={() => setFormulaire(z)}
+                                                            aria-label={`${enAttente ? "Renommer" : "Modifier"} le quartier ${z.nom}`}
+                                                        >
+                                                            <Pencil className="size-4" aria-hidden="true" />
+                                                            <span className="hidden xl:inline">{enAttente ? "Renommer" : "Modifier"}</span>
                                                         </button>
                                                     )}
-                                                    <button
-                                                        type="button"
-                                                        className={BOUTON_LIGNE}
-                                                        onClick={() => setFormulaire(z)}
-                                                        aria-label={`${enAttente ? "Renommer" : "Modifier"} le quartier ${z.nom}`}
-                                                    >
-                                                        <Pencil className="size-4" aria-hidden="true" />
-                                                        <span className="hidden xl:inline">{enAttente ? "Renommer" : "Modifier"}</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={BOUTON_LIGNE}
-                                                        onClick={() => setFusion(z)}
-                                                        aria-label={`Fusionner le quartier ${z.nom}`}
-                                                    >
-                                                        <GitMerge className="size-4" aria-hidden="true" />
-                                                        <span className="hidden xl:inline">Fusionner</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={BOUTON_LIGNE_DANGER}
-                                                        onClick={() => setSuppression({ cible: z, enCours: false, erreur: "" })}
-                                                        aria-label={`Supprimer le quartier ${z.nom}`}
-                                                    >
-                                                        <Trash2 className="size-4" aria-hidden="true" />
-                                                        <span className="hidden xl:inline">Supprimer</span>
-                                                    </button>
+                                                    {peut("bo.quartiers.fusionner") && (
+                                                        <button
+                                                            type="button"
+                                                            className={BOUTON_LIGNE}
+                                                            onClick={() => setFusion(z)}
+                                                            aria-label={`Fusionner le quartier ${z.nom}`}
+                                                        >
+                                                            <GitMerge className="size-4" aria-hidden="true" />
+                                                            <span className="hidden xl:inline">Fusionner</span>
+                                                        </button>
+                                                    )}
+                                                    {peut("bo.quartiers.supprimer") && (
+                                                        <button
+                                                            type="button"
+                                                            className={BOUTON_LIGNE_DANGER}
+                                                            onClick={() => setSuppression({ cible: z, enCours: false, erreur: "" })}
+                                                            aria-label={`Supprimer le quartier ${z.nom}`}
+                                                        >
+                                                            <Trash2 className="size-4" aria-hidden="true" />
+                                                            <span className="hidden xl:inline">Supprimer</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

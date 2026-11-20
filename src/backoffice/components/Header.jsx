@@ -15,44 +15,10 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
+import { navigation } from "../config/navigation";
+import { filtrerMenu } from "../utils/permissions";
 import { ENV_LABEL, ENV_BADGE_CLASS } from "../config/environment";
-
-// Navigation groupée par thème : un menu déroulant par groupe.
-const navigation = [
-    {
-        name: "Membres",
-        items: [
-            { name: "Utilisateurs", href: "/users" },
-            { name: "Cellules", href: "/cellules" },
-            { name: "Membres par quartier", href: "/membres-par-quartier", adminOnly: true },
-            { name: "Communes", href: "/communes", adminOnly: true },
-            { name: "Quartiers", href: "/quartiers", adminOnly: true },
-            { name: "Statistiques", href: "/statistiques" },
-            { name: "Export des données", href: "/export-donnees", adminOnly: true },
-        ],
-    },
-    {
-        name: "Contenus",
-        items: [
-            { name: "Activités", href: "/activites" },
-            { name: "Catégories", href: "/categorie" },
-            { name: "Pays", href: "/pays" },
-            { name: "Destinations", href: "/destinations" },
-        ],
-    },
-    {
-        name: "Module Bible",
-        items: [
-            { name: "Plans", href: "/reading-plans" },
-            { name: "Verset du jour", href: "/daily-verse" },
-            { name: "Communication", href: "/communication" },
-        ],
-    },
-    {
-        name: "Configuration",
-        items: [{ name: "Version App", href: "/app-version" }],
-    },
-];
 
 const userNavigation = [{ name: "Déconnexion", href: "#" }];
 
@@ -288,13 +254,9 @@ function Header() {
         return location.pathname.startsWith(href);
     };
 
-    // Liens réservés aux admins masqués pour les autres comptes.
-    const navigationVisible = navigation
-        .map((g) => ({
-            ...g,
-            items: g.items.filter((i) => !i.adminOnly || user?.role === "ADMIN"),
-        }))
-        .filter((g) => g.items.length > 0);
+    // Un lien sans la permission « voir » de son module est masqué.
+    const acces = usePermissions();
+    const navigationVisible = filtrerMenu(navigation, acces);
 
     const isActiveGroup = (group) =>
         group.items.some((item) => isActivePath(item.href));

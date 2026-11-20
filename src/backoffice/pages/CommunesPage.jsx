@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import { supprimerCommune, useCommunes, usePaysListe, useValeurRetardee } from "../hooks/useReferentiel";
 import { EtatErreur, EtatVide, FOCUS, Squelette } from "../components/statistiques/StatsUi";
 import {
@@ -25,7 +26,8 @@ import { IMPORTS, libelleCommunes, libelleQuartiers, nombrePages } from "../util
 
 export default function CommunesPage() {
     const { user } = useAuth();
-    const estAdmin = user?.role === "ADMIN";
+    const { peut } = usePermissions();
+    const estAdmin = peut("bo.communes.voir");
     const [paysId, setPaysId] = useState("");
     const [recherche, setRecherche] = useState("");
     const [page, setPage] = useState(1);
@@ -75,14 +77,18 @@ export default function CommunesPage() {
                 </div>
                 {/* Boutons sur une ligne, texte jamais coupé ; en colonne sur téléphone. */}
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-                    <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
-                        <Upload className="size-4" aria-hidden="true" />
-                        {IMPORTS.communes.bouton}
-                    </button>
-                    <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
-                        <Plus className="size-4" aria-hidden="true" />
-                        Ajouter une commune
-                    </button>
+                    {peut("bo.communes.importer") && (
+                        <button type="button" className={`${BOUTON_SECONDAIRE} whitespace-nowrap`} onClick={() => setImportOuvert(true)}>
+                            <Upload className="size-4" aria-hidden="true" />
+                            {IMPORTS.communes.bouton}
+                        </button>
+                    )}
+                    {peut("bo.communes.ajouter") && (
+                        <button type="button" className={`${BOUTON_PRIMAIRE} whitespace-nowrap`} onClick={() => setFormulaire({})}>
+                            <Plus className="size-4" aria-hidden="true" />
+                            Ajouter une commune
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -186,24 +192,28 @@ export default function CommunesPage() {
                                         </td>
                                         <td className="px-4 py-2">
                                             <div className="flex justify-end gap-2">
-                                                <button
-                                                    type="button"
-                                                    className={BOUTON_LIGNE}
-                                                    onClick={() => setFormulaire(c)}
-                                                    aria-label={`Modifier la commune ${c.nom}`}
-                                                >
-                                                    <Pencil className="size-4" aria-hidden="true" />
-                                                    <span className="hidden md:inline">Modifier</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={BOUTON_LIGNE_DANGER}
-                                                    onClick={() => setSuppression({ cible: c, enCours: false, erreur: "" })}
-                                                    aria-label={`Supprimer la commune ${c.nom}`}
-                                                >
-                                                    <Trash2 className="size-4" aria-hidden="true" />
-                                                    <span className="hidden md:inline">Supprimer</span>
-                                                </button>
+                                                {peut("bo.communes.modifier") && (
+                                                    <button
+                                                        type="button"
+                                                        className={BOUTON_LIGNE}
+                                                        onClick={() => setFormulaire(c)}
+                                                        aria-label={`Modifier la commune ${c.nom}`}
+                                                    >
+                                                        <Pencil className="size-4" aria-hidden="true" />
+                                                        <span className="hidden md:inline">Modifier</span>
+                                                    </button>
+                                                )}
+                                                {peut("bo.communes.supprimer") && (
+                                                    <button
+                                                        type="button"
+                                                        className={BOUTON_LIGNE_DANGER}
+                                                        onClick={() => setSuppression({ cible: c, enCours: false, erreur: "" })}
+                                                        aria-label={`Supprimer la commune ${c.nom}`}
+                                                    >
+                                                        <Trash2 className="size-4" aria-hidden="true" />
+                                                        <span className="hidden md:inline">Supprimer</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

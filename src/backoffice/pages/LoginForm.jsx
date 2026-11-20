@@ -129,7 +129,7 @@ const LoginForm = ({ onLogin }) => {
 
                 {/* Message d'erreur */}
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center space-x-3 backdrop-blur-sm">
+                    <div role="alert" className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center space-x-3 backdrop-blur-sm">
                         <AlertCircle className="w-5 h-5 text-red-300 flex-shrink-0" />
                         <p className="text-red-200 text-sm">{error}</p>
                     </div>

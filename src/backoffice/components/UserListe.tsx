@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { libelleLieuUtilisateur, lieuUtilisateur } from "../utils/referentiel";
 import EditUserModal from "./EditUserModal";
+import { usePermissions } from "../hooks/usePermissions";
 
 type UserListProps = {
     users: User[];
@@ -60,6 +61,7 @@ const UserList: React.FC<UserListProps> = ({
     filtreActif = false,
 }) => {
     const navigate = useNavigate();
+    const { peut } = usePermissions();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -212,14 +214,16 @@ const UserList: React.FC<UserListProps> = ({
                     </div>
 
                     {/* Bouton d'export Excel */}
-                    <button
-                        onClick={exportToExcel}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        title="Exporter vers Excel"
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter Excel
-                    </button>
+                    {peut("bo.utilisateurs.exporter") && (
+                        <button
+                            onClick={exportToExcel}
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                            title="Exporter vers Excel"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter Excel
+                        </button>
+                    )}
                 </div>
                 {searchTerm && (
                     <p className="mt-2 text-sm text-gray-500">
@@ -335,35 +339,41 @@ const UserList: React.FC<UserListProps> = ({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 flex-wrap flex-shrink-0 pl-14 sm:pl-0">
-                                                <button
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/users/${user.id}`
-                                                        )
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <Eye className="w-3 h-3 mr-1" />
-                                                    Voir
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleEdit(user)
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <Edit2 className="w-3 h-3 mr-1" />
-                                                    Modifier
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleDelete(user)
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                >
-                                                    <Trash2 className="w-3 h-3 mr-1" />
-                                                    Supprimer
-                                                </button>
+                                                {peut("bo.utilisateurs.details") && (
+                                                    <button
+                                                        onClick={() =>
+                                                            navigate(
+                                                                `/users/${user.id}`
+                                                            )
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        <Eye className="w-3 h-3 mr-1" />
+                                                        Voir
+                                                    </button>
+                                                )}
+                                                {peut("bo.utilisateurs.modifier") && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleEdit(user)
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        <Edit2 className="w-3 h-3 mr-1" />
+                                                        Modifier
+                                                    </button>
+                                                )}
+                                                {peut("bo.utilisateurs.supprimer") && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDelete(user)
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    >
+                                                        <Trash2 className="w-3 h-3 mr-1" />
+                                                        Supprimer
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

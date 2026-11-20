@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDailyVerses } from "../hooks/useDailyVerses";
 import DailyVerseFormModal from "../components/DailyVerseFormModal";
 import { bookName } from "../config/bibleBooks";
+import { usePermissions } from "../hooks/usePermissions";
 
 function fmtDate(v) {
     if (!v) return null;
@@ -11,6 +12,7 @@ function fmtDate(v) {
 }
 
 const DailyVersePage = () => {
+    const { peut } = usePermissions();
     const { verses, loading, error, createVerse, updateVerse, setStatus, deleteVerse } =
         useDailyVerses();
     const [editing, setEditing] = useState(null);
@@ -37,12 +39,14 @@ const DailyVersePage = () => {
                 precis (occasion speciale) en l'epinglant a une date.
             </p>
 
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
-                onClick={() => setCreating(true)}
-            >
-                Epingler un verset a une date
-            </button>
+            {peut("bo.verset.creer") && (
+                <button
+                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium"
+                    onClick={() => setCreating(true)}
+                >
+                    Epingler un verset a une date
+                </button>
+            )}
 
             {loading && <p className="text-blue-600">Chargement...</p>}
             {error && <p className="text-red-500">{error}</p>}
@@ -107,12 +111,14 @@ const DailyVersePage = () => {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex justify-end gap-3">
-                                                <button
-                                                    className="text-blue-600 hover:underline"
-                                                    onClick={() => setEditing(v)}
-                                                >
-                                                    Editer
-                                                </button>
+                                                {peut("bo.verset.creer") && (
+                                                    <button
+                                                        className="text-blue-600 hover:underline"
+                                                        onClick={() => setEditing(v)}
+                                                    >
+                                                        Editer
+                                                    </button>
+                                                )}
                                                 <button
                                                     className="text-gray-600 hover:underline"
                                                     onClick={() =>
@@ -128,12 +134,14 @@ const DailyVersePage = () => {
                                                         ? "Desactiver"
                                                         : "Activer"}
                                                 </button>
-                                                <button
-                                                    className="text-red-600 hover:underline"
-                                                    onClick={() => handleDelete(v)}
-                                                >
-                                                    Supprimer
-                                                </button>
+                                                {peut("bo.verset.creer") && (
+                                                    <button
+                                                        className="text-red-600 hover:underline"
+                                                        onClick={() => handleDelete(v)}
+                                                    >
+                                                        Supprimer
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

@@ -9,8 +9,10 @@ import {
     Download,
 } from "lucide-react";
 import React, { useState } from "react";
+import { usePermissions } from "../hooks/usePermissions";
 
 function CategorieList({ categorie, onCategorieUpdate, onCategorieDelete }) {
+    const { peut } = usePermissions();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedCategorie, setSelectedCategorie] = useState(null);
@@ -178,14 +180,16 @@ function CategorieList({ categorie, onCategorieUpdate, onCategorieDelete }) {
                     </div>
 
                     {/* Bouton d'export Excel */}
-                    <button
-                        onClick={exportToExcel}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        title="Exporter vers Excel"
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter Excel
-                    </button>
+                    {peut("bo.categories.exporter") && (
+                        <button
+                            onClick={exportToExcel}
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                            title="Exporter vers Excel"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter Excel
+                        </button>
+                    )}
                 </div>
                 {searchTerm && (
                     <p className="mt-2 text-sm text-gray-500">
@@ -254,30 +258,34 @@ function CategorieList({ categorie, onCategorieUpdate, onCategorieDelete }) {
                                         </td>
 
                                         <td className="px-3 flex gap-2 py-2">
-                                            <button
-                                                onClick={() =>
-                                                    openEditModal(cat)
-                                                }
-                                                className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                                                title="Modifier la catégorie"
-                                            >
-                                                <PenIcon
-                                                    className="inline mr-1"
-                                                    size={12}
-                                                />
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    openDeleteModal(cat)
-                                                }
-                                                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                                                title="Supprimer la catégorie"
-                                            >
-                                                <Trash
-                                                    className="inline mr-1"
-                                                    size={12}
-                                                />
-                                            </button>
+                                            {peut("bo.categories.modifier") && (
+                                                <button
+                                                    onClick={() =>
+                                                        openEditModal(cat)
+                                                    }
+                                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                                    title="Modifier la catégorie"
+                                                >
+                                                    <PenIcon
+                                                        className="inline mr-1"
+                                                        size={12}
+                                                    />
+                                                </button>
+                                            )}
+                                            {peut("bo.categories.supprimer") && (
+                                                <button
+                                                    onClick={() =>
+                                                        openDeleteModal(cat)
+                                                    }
+                                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                                    title="Supprimer la catégorie"
+                                                >
+                                                    <Trash
+                                                        className="inline mr-1"
+                                                        size={12}
+                                                    />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

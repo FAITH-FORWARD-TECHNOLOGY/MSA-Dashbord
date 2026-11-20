@@ -14,8 +14,10 @@ import {
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../hooks/useUsers";
+import { usePermissions } from "../hooks/usePermissions";
 
 function CelluleList({ cellules, onUpdate, onDelete }) {
+    const { peut } = usePermissions();
     const navigate = useNavigate();
     const { users } = useUsers();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -311,14 +313,16 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                     </div>
 
                     {/* Bouton d'export Excel */}
-                    <button
-                        onClick={exportToExcel}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        title="Exporter vers Excel"
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter Excel
-                    </button>
+                    {peut("bo.cellules.exporter") && (
+                        <button
+                            onClick={exportToExcel}
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                            title="Exporter vers Excel"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter Excel
+                        </button>
+                    )}
                 </div>
                 {globalSearchTerm && (
                     <p className="mt-2 text-sm text-gray-500">
@@ -476,38 +480,44 @@ function CelluleList({ cellules, onUpdate, onDelete }) {
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="flex items-center space-x-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/cellules/${cellule.id}`,
-                                                        )
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <Eye className="w-3 h-3 mr-1" />
-                                                    Voir
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        openEditModal(cellule)
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <PenIcon className="w-3 h-3 mr-1" />
-                                                    Modifier
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        openDeleteModal(cellule)
-                                                    }
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                >
-                                                    <Trash className="w-3 h-3 mr-1" />
-                                                    Supprimer
-                                                </button>
+                                                {peut("bo.cellules.details") && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            navigate(
+                                                                `/cellules/${cellule.id}`,
+                                                            )
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        <Eye className="w-3 h-3 mr-1" />
+                                                        Voir
+                                                    </button>
+                                                )}
+                                                {peut("bo.cellules.modifier") && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            openEditModal(cellule)
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        <PenIcon className="w-3 h-3 mr-1" />
+                                                        Modifier
+                                                    </button>
+                                                )}
+                                                {peut("bo.cellules.supprimer") && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            openDeleteModal(cellule)
+                                                        }
+                                                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    >
+                                                        <Trash className="w-3 h-3 mr-1" />
+                                                        Supprimer
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

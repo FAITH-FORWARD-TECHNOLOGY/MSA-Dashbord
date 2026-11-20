@@ -10,10 +10,12 @@ import {
     Power,
     PowerOff,
 } from "lucide-react";
+import { usePermissions } from "../hooks/usePermissions";
 
 // Reçoit les callbacks `onEdit`, `onToggle`, `onDelete` depuis la page parent.
 // La liste reste "dumb" — elle se contente d'afficher et de remonter les clics.
 function ActiviteList({ activities, onEdit, onToggle, onDelete }) {
+    const { peut } = usePermissions();
     // États pour la recherche et pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -133,14 +135,16 @@ function ActiviteList({ activities, onEdit, onToggle, onDelete }) {
                     </div>
 
                     {/* Bouton d'export Excel */}
-                    <button
-                        onClick={exportToExcel}
-                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                        title="Exporter vers Excel"
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Exporter Excel
-                    </button>
+                    {peut("bo.activites.exporter") && (
+                        <button
+                            onClick={exportToExcel}
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                            title="Exporter vers Excel"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter Excel
+                        </button>
+                    )}
                 </div>
                 {searchTerm && (
                     <p className="mt-2 text-sm text-gray-500">
@@ -272,39 +276,45 @@ function ActiviteList({ activities, onEdit, onToggle, onDelete }) {
                                         {/* ACTIONS */}
                                         <td className="px-4 py-2 text-sm">
                                             <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => onEdit?.(activity)}
-                                                    title="Modifier"
-                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => onToggle?.(activity)}
-                                                    title={
-                                                        (activity.isActive ?? true)
-                                                            ? "Désactiver"
-                                                            : "Activer"
-                                                    }
-                                                    className={`p-1.5 rounded ${
-                                                        (activity.isActive ?? true)
-                                                            ? "text-amber-600 hover:bg-amber-50"
-                                                            : "text-emerald-600 hover:bg-emerald-50"
-                                                    }`}
-                                                >
-                                                    {(activity.isActive ?? true) ? (
-                                                        <PowerOff className="w-4 h-4" />
-                                                    ) : (
-                                                        <Power className="w-4 h-4" />
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={() => onDelete?.(activity)}
-                                                    title="Supprimer"
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {peut("bo.activites.modifier") && (
+                                                    <button
+                                                        onClick={() => onEdit?.(activity)}
+                                                        title="Modifier"
+                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {peut("bo.activites.activer") && (
+                                                    <button
+                                                        onClick={() => onToggle?.(activity)}
+                                                        title={
+                                                            (activity.isActive ?? true)
+                                                                ? "Désactiver"
+                                                                : "Activer"
+                                                        }
+                                                        className={`p-1.5 rounded ${
+                                                            (activity.isActive ?? true)
+                                                                ? "text-amber-600 hover:bg-amber-50"
+                                                                : "text-emerald-600 hover:bg-emerald-50"
+                                                        }`}
+                                                    >
+                                                        {(activity.isActive ?? true) ? (
+                                                            <PowerOff className="w-4 h-4" />
+                                                        ) : (
+                                                            <Power className="w-4 h-4" />
+                                                        )}
+                                                    </button>
+                                                )}
+                                                {peut("bo.activites.supprimer") && (
+                                                    <button
+                                                        onClick={() => onDelete?.(activity)}
+                                                        title="Supprimer"
+                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

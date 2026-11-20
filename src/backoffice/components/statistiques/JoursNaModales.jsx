@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { AlertTriangle, Loader2, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { FOCUS } from "./StatsUi";
+import { usePermissions } from "../../hooks/usePermissions";
 import { dateLongue, pluriel } from "./format";
 import { corpsJourNa, erreursJourNa, estConflitPresences, MOTIF_MAX } from "./joursNa";
 
@@ -410,6 +411,9 @@ export function JourNaDetailModal({
     onFermer,
     retourFocus,
 }) {
+    const { peut } = usePermissions();
+    // Sans « marquer NA », le détail reste consultable mais pas modifiable.
+    const peutNa = peut("bo.statistiques.marquer_na");
     const [confirmation, setConfirmation] = useState(false);
     const [enCours, setEnCours] = useState(false);
     const [erreurSuppr, setErreurSuppr] = useState("");
@@ -557,7 +561,7 @@ export function JourNaDetailModal({
                         ref={refSupprimer}
                         type="button"
                         onClick={() => setConfirmation(true)}
-                        disabled={!jour || chargement}
+                        disabled={!jour || chargement || !peutNa}
                         className={`${BOUTON_SECONDAIRE} text-red-700`}
                     >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -566,7 +570,7 @@ export function JourNaDetailModal({
                     <button
                         type="button"
                         onClick={() => onModifier(jour)}
-                        disabled={!jour || chargement}
+                        disabled={!jour || chargement || !peutNa}
                         data-autofocus
                         className={BOUTON_PRIMAIRE}
                     >

@@ -3,8 +3,10 @@ import { Plus } from "lucide-react";
 import CategorieList from "../components/CategorieList";
 import CategorieFormModal from "../components/CategorieFormModal";
 import { useCategories } from "../hooks/useCategories";
+import { usePermissions } from "../hooks/usePermissions";
 
 const CategoriePage = () => {
+    const { peut } = usePermissions();
     const [showModal, setShowModal] = useState(false);
     const {
         categories,
@@ -22,12 +24,14 @@ const CategoriePage = () => {
                 Gestion des categories
             </h2>
 
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => setShowModal(true)}
-            >
-                Créer une categorie
-            </button>
+            {peut("bo.categories.creer") && (
+                <button
+                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    onClick={() => setShowModal(true)}
+                >
+                    Créer une categorie
+                </button>
+            )}
 
             {loading && <p className="text-blue-600">Chargement...</p>}
             {error && <p className="text-red-500">{error}</p>}

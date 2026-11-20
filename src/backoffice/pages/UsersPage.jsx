@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import UserList from "../components/UserListe";
 import UserFormModal from "../components/UserFormModal";
 import { useUsers } from "../hooks/useUsers";
-import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import QuartierResidenceField from "../components/referentiel/QuartierResidenceField";
 import { libelleFiltreQuartier, parametresUtilisateurs } from "../utils/referentiel";
 
 const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
-    const { user } = useAuth();
+    const { peut } = usePermissions();
     // Filtre « Quartier » (admin) : quartier choisi, SANS_QUARTIER ou null.
     const [filtreQuartier, setFiltreQuartier] = useState(null);
     const {
@@ -27,14 +27,16 @@ const UsersPage = () => {
                 Gestion des utilisateurs
             </h2>
 
-            <button
-                className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => setShowModal(true)}
-            >
-                Créer un utilisateur
-            </button>
+            {peut("bo.utilisateurs.creer") && (
+                <button
+                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    onClick={() => setShowModal(true)}
+                >
+                    Créer un utilisateur
+                </button>
+            )}
 
-            {user?.role === "ADMIN" && (
+            {peut("bo.quartiers.voir") && (
                 <div className="mb-4 sm:max-w-md">
                     <QuartierResidenceField
                         value={filtreQuartier}

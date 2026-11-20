@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { AlertCircle, CheckCircle2, Download, Loader2, ShieldAlert } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import { telechargerRepartition, useRepartition } from "../hooks/useRepartition";
 import { EtatErreur, EtatVide, FOCUS, Squelette } from "../components/statistiques/StatsUi";
 import RepartitionTable from "../components/repartition/RepartitionTable";
@@ -25,7 +26,7 @@ function Carte({ titre, valeur, detail }) {
 
 export default function MembresParQuartierPage() {
     const { user } = useAuth();
-    const estAdmin = user?.role === "ADMIN";
+    const estAdmin = usePermissions().peut("bo.quartiers.voir");
     // "" = tous les pays ; "0" = pays non renseigné.
     const [paysId, setPaysId] = useState("");
     const { data, loading, error, interdit, recharger } = useRepartition({ paysId }, estAdmin);

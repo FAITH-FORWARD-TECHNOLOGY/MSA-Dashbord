@@ -7,6 +7,7 @@ import {
     ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 import { telechargerExport, useStatistiquesCellules } from "../hooks/useStatistiques";
 import { FOCUS } from "../components/statistiques/StatsUi";
 import CellulesMultiSelect from "../components/statistiques/CellulesMultiSelect";
@@ -50,6 +51,7 @@ const frDate = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4
 
 export default function ExportDonneesPage() {
     const { user } = useAuth();
+    const { peut } = usePermissions();
     const [dates, setDates] = useState(() => periode(6));
     const cellulesApi = useStatistiquesCellules();
     // Cellules cochées (identifiants) ; [] = toutes les cellules.
@@ -59,7 +61,7 @@ export default function ExportDonneesPage() {
     const idAu = useId();
     const enCours = etat.statut === "envoi";
 
-    if (user && user.role !== "ADMIN") {
+    if (user && !peut("bo.export_donnees.voir")) {
         return (
             <div className="max-w-3xl mx-auto px-4 py-10">
                 <div role="alert" className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
