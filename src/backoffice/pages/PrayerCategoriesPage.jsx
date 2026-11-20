@@ -31,6 +31,7 @@ const PrayerCategoriesPage = () => {
     const [editLibelle, setEditLibelle] = useState("");
     const [message, setMessage] = useState(null); // { type: "ok" | "erreur", texte }
     const [busy, setBusy] = useState(false);
+    const [erreurAjout, setErreurAjout] = useState(""); // erreur affichée sous le champ d'ajout
 
     const [joursSaisis, setJoursSaisis] = useState(null);
     const delaiOk = delaiModifiable(jours, loading);
@@ -51,7 +52,7 @@ const PrayerCategoriesPage = () => {
         setFocusCrayon(id);
     };
 
-    const executer = async (action, succes) => {
+    const executer = async (action, succes, surErreur) => {
         setBusy(true);
         setMessage(null);
         try {
@@ -59,7 +60,8 @@ const PrayerCategoriesPage = () => {
             if (succes) setMessage({ type: "ok", texte: succes });
             return true;
         } catch (err) {
-            setMessage({ type: "erreur", texte: err.message });
+            if (surErreur) surErreur(err.message);
+            else setMessage({ type: "erreur", texte: err.message });
             return false;
         } finally {
             setBusy(false);
@@ -68,9 +70,13 @@ const PrayerCategoriesPage = () => {
 
     const ajouter = async (e) => {
         e.preventDefault();
+        setErreurAjout("");
         const err = validerLibelle(nouveau);
-        if (err) return setMessage({ type: "erreur", texte: err });
-        if (await executer(() => creer(nouveau.trim()), "Catégorie créée.")) {
+        if (err) {
+            setMessage(null);
+            return setErreurAjout(err);
+        }
+        if (await executer(() => creer(nouveau.trim()), "Catégorie créée.", setErreurAjout)) {
             setNouveau("");
         }
     };
@@ -127,11 +133,11 @@ const PrayerCategoriesPage = () => {
                 <h3 id="titre-archivage" className="text-lg font-semibold text-gray-800 mb-3">
                     Archivage automatique
                 </h3>
-                <form onSubmit={sauverJours} className="flex flex-wrap items-end gap-3">
-                    <div>
-                        <label htmlFor="prieres-jours" className="block text-sm font-medium text-gray-700 mb-1">
-                            Archiver automatiquement les sujets après N jours
-                        </label>
+                <form onSubmit={sauverJours}>
+                    <label htmlFor="prieres-jours" className="block text-sm font-medium text-gray-700 mb-1">
+                        Archiver automatiquement les sujets après N jours
+                    </label>
+                    <div className="flex items-stretch gap-3">
                         <input
                             id="prieres-jours"
                             type="number"
@@ -146,10 +152,10 @@ const PrayerCategoriesPage = () => {
                             className={`w-32 ${inputClass}`}
                             disabled={!delaiOk}
                         />
+                        <button type="submit" className={primaryBtn} disabled={busy || !delaiOk || Boolean(erreurJours)}>
+                            Enregistrer
+                        </button>
                     </div>
-                    <button type="submit" className={primaryBtn} disabled={busy || !delaiOk || Boolean(erreurJours)}>
-                        Enregistrer
-                    </button>
                 </form>
                 {!loading && jours === null && (
                     <p className="text-sm text-red-600 mt-2" role="alert">
@@ -169,11 +175,11 @@ const PrayerCategoriesPage = () => {
                     Catégories
                 </h3>
 
-                <form onSubmit={ajouter} className="flex flex-wrap items-end gap-3 mb-5">
-                    <div>
-                        <label htmlFor="prieres-nouvelle" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nouvelle catégorie
-                        </label>
+                <form onSubmit={ajouter} className="mb-5">
+                    <label htmlFor="prieres-nouvelle" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nouvelle catégorie
+                    </label>
+                    <div className="flex flex-wrap items-stretch gap-3">
                         <input
                             id="prieres-nouvelle"
                             type="text"
@@ -181,12 +187,19 @@ const PrayerCategoriesPage = () => {
                             value={nouveau}
                             onChange={(e) => setNouveau(e.target.value)}
                             placeholder="Ex. : Jeunesse"
+                            aria-invalid={erreurAjout ? "true" : "false"}
+                            aria-describedby={erreurAjout ? "prieres-nouvelle-erreur" : undefined}
                             className={`w-64 ${inputClass}`}
                         />
+                        <button type="submit" className={primaryBtn} disabled={busy || !nouveau.trim()}>
+                            Ajouter
+                        </button>
                     </div>
-                    <button type="submit" className={primaryBtn} disabled={busy || !nouveau.trim()}>
-                        Ajouter
-                    </button>
+                    {erreurAjout && (
+                        <p id="prieres-nouvelle-erreur" role="alert" className="mt-2 text-sm text-red-600">
+                            {erreurAjout}
+                        </p>
+                    )}
                 </form>
 
                 {loading && <Squelette lignes={3} />}
