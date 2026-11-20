@@ -6,6 +6,7 @@ import {
     erreurFichierUtilisateurs,
     filtrerCellules,
     formulaireImportValide,
+    motDePasseCommunFaible,
     paysParDefaut,
 } from "./importUtilisateurs.js";
 
@@ -48,4 +49,13 @@ test("formulaireImportValide : tout est requis, mots de passe identiques", () =>
     assert.equal(formulaireImportValide({ ...ok, confirmation: "autre" }), false);
     assert.equal(formulaireImportValide({ ...ok, motDePasse: "court", confirmation: "court" }), false);
     assert.equal(formulaireImportValide({ ...ok, fichier: null }), false);
+});
+
+test("motDePasseCommunFaible : liste, caractère répété, suites numériques", () => {
+    for (const m of ["123123123", "Password", "msa12345", "aaaaaaaa", "987654321", "23456789"]) {
+        assert.equal(motDePasseCommunFaible(m), true, m);
+    }
+    for (const m of ["Commun-e2e-2026", "12345679", "abcdefgh1"]) assert.equal(motDePasseCommunFaible(m), false, m);
+    const ok = { celluleId: 1, paysId: 2, motDePasse: "123123123", confirmation: "123123123", fichier: fichier("a.csv") };
+    assert.equal(formulaireImportValide(ok), false);
 });

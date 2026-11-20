@@ -12,6 +12,8 @@ import {
     erreurFichierUtilisateurs,
     filtrerCellules,
     formulaireImportValide,
+    MESSAGE_MDP_FAIBLE,
+    motDePasseCommunFaible,
     paysParDefaut,
 } from "../utils/importUtilisateurs";
 import { erreursMotDePasse, MDP_MIN } from "../utils/motDePasse";
@@ -31,13 +33,22 @@ function Squelette() {
 }
 
 function Rapport({ resultat, onFermer }) {
-    const { total, crees, refuses, rejets = [], rapport } = resultat;
+    const { total, crees, refuses, rejets = [], sansQuartier = [], rapport } = resultat;
+    // La zone vivante est montée vide, puis remplie : sinon le lecteur d'écran ne l'annonce pas.
+    const [annonce, setAnnonce] = useState("");
+    useEffect(() => {
+        setAnnonce("Import terminé.");
+    }, []);
     return (
         <div className="space-y-4">
-            <p aria-live="polite" className="flex items-start gap-2 text-sm font-medium text-green-700">
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                Import terminé.
-            </p>
+            <div aria-live="polite" className="flex items-start gap-2 text-sm font-medium text-green-700">
+                {annonce && (
+                    <>
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                        <p>{annonce}</p>
+                    </>
+                )}
+            </div>
             <div className="grid grid-cols-3 gap-2">
                 <div className={`${COMPTEUR} border-gray-200 bg-gray-50 text-gray-800`}>
                     <span className="block text-2xl font-bold tabular-nums">{total}</span>
@@ -52,6 +63,38 @@ function Rapport({ resultat, onFermer }) {
                     <span className="block text-sm">{refuses > 1 ? "refusés" : "refusé"}</span>
                 </div>
             </div>
+            {sansQuartier.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-sm font-medium text-amber-800">
+                        {sansQuartier.length} {sansQuartier.length > 1 ? "comptes créés" : "compte créé"} sans quartier (non reconnu)
+                    </p>
+                    <div className="max-h-48 overflow-auto rounded-md border border-amber-200">
+                        <table className="min-w-full text-sm">
+                            <caption className="sr-only">Comptes créés sans quartier</caption>
+                            <thead className="sticky top-0">
+                                <tr className={ENTETE_TABLEAU}>
+                                    <th scope="col" className="px-3 py-2">Ligne</th>
+                                    <th scope="col" className="px-3 py-2">Nom</th>
+                                    <th scope="col" className="px-3 py-2">E-mail</th>
+                                    <th scope="col" className="px-3 py-2">Quartier</th>
+                                    <th scope="col" className="px-3 py-2">Raison</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {sansQuartier.map((r) => (
+                                    <tr key={r.ligne} className="align-top">
+                                        <td className="px-3 py-2 tabular-nums text-gray-500">{r.ligne}</td>
+                                        <td className="px-3 py-2 text-gray-800">{r.nom || "—"}</td>
+                                        <td className="break-all px-3 py-2 text-gray-800">{r.email || "—"}</td>
+                                        <td className="px-3 py-2 text-gray-800">{r.quartier || "—"}</td>
+                                        <td className="px-3 py-2 text-amber-800">{r.raison === "ambigu" ? "Ambigu" : "Inconnu"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
             {rejets.length > 0 && (
                 <div className="max-h-72 overflow-auto rounded-md border border-gray-200">
                     <table className="min-w-full text-sm">
@@ -86,7 +129,7 @@ function Rapport({ resultat, onFermer }) {
                 {rapport && (
                     <button type="button" className={BOUTON_EXPORT} onClick={() => telechargerRapport(rapport)}>
                         <Download className="size-4" aria-hidden="true" />
-                        Télécharger les lignes rejetées
+                        Télécharger le rapport (lignes refusées et sans quartier)
                     </button>
                 )}
             </div>
@@ -124,6 +167,7 @@ function Contenu({ onFermer, onImporte, onOccupe }) {
     const celluleChoisie = actives.find((c) => c.id === celluleId) ?? null;
     const propositions = filtrerCellules(actives, recherche);
     const erreursMdp = erreursMotDePasse(motDePasse, confirmation);
+    if (!erreursMdp.mdp && motDePasseCommunFaible(motDePasse)) erreursMdp.mdp = MESSAGE_MDP_FAIBLE;
     const valide = formulaireImportValide({ celluleId, paysId, motDePasse, confirmation, fichier });
 
     const modele = async () => {
@@ -231,7 +275,6 @@ function Contenu({ onFermer, onImporte, onOccupe }) {
                         anchor="bottom start"
                         className="z-[70] max-h-60 w-[var(--input-width)] overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg empty:invisible"
                     >
-                        {propositions.length === 0 && <p className="px-3 py-2 text-sm text-gray-500">Aucune cellule trouvée.</p>}
                         {propositions.map((c) => (
                             <ComboboxOption
                                 key={c.id}
@@ -243,6 +286,11 @@ function Contenu({ onFermer, onImporte, onOccupe }) {
                         ))}
                     </ComboboxOptions>
                 </Combobox>
+                {propositions.length === 0 && (
+                    <p role="status" className="mt-1 text-sm text-gray-500">
+                        Aucune cellule trouvée.
+                    </p>
+                )}
             </Champ>
 
             <Champ id={idPays} libelle="Pays" erreur={touche && !paysId ? "Choisissez un pays." : ""}>

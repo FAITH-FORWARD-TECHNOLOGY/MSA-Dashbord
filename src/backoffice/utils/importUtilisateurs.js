@@ -39,7 +39,44 @@ export function erreurFichierUtilisateurs(fichier) {
     return "";
 }
 
+// Mots de passe communs trop faciles à deviner (mêmes règles que le serveur).
+const MDP_FAIBLES = new Set([
+    "123123123",
+    "12345678",
+    "123456789",
+    "1234567890",
+    "00000000",
+    "11111111",
+    "password",
+    "motdepasse",
+    "azerty123",
+    "qwerty123",
+    "msa12345",
+]);
+
+export const MESSAGE_MDP_FAIBLE = "Mot de passe trop faible : choisissez-en un plus difficile à deviner.";
+
+export function motDePasseCommunFaible(mdp) {
+    const m = String(mdp ?? "")
+        .trim()
+        .toLowerCase();
+    if (MDP_FAIBLES.has(m)) return true;
+    const c = Array.from(m);
+    if (c.length > 0 && c.every((x) => x === c[0])) return true;
+    if (/^\d+$/.test(m) && c.length > 1) {
+        const d = c.map(Number);
+        const pas = d[1] - d[0];
+        return (pas === 1 || pas === -1) && d.every((x, i) => i === 0 || x - d[i - 1] === pas);
+    }
+    return false;
+}
+
 // Le bouton « Importer » n'est actif que si tout est renseigné.
 export function formulaireImportValide({ celluleId, paysId, motDePasse, confirmation, fichier }) {
-    return Boolean(celluleId) && Boolean(paysId) && motDePasseValide(motDePasse, confirmation) && !erreurFichierUtilisateurs(fichier);
+    return (
+        Boolean(celluleId) &&
+        Boolean(paysId) &&
+        motDePasseValide(motDePasse, confirmation) &&
+        !motDePasseCommunFaible(motDePasse) && !erreurFichierUtilisateurs(fichier)
+    );
 }
