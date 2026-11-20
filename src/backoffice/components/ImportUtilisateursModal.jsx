@@ -16,7 +16,7 @@ import {
     motDePasseCommunFaible,
     paysParDefaut,
 } from "../utils/importUtilisateurs";
-import { erreursMotDePasse, MDP_MIN } from "../utils/motDePasse";
+import { erreursMotDePasse } from "../utils/motDePasse";
 
 // Fenêtre d'import : modèle, cellule et pays, mot de passe commun, fichier, puis rapport.
 
@@ -309,7 +309,7 @@ function Contenu({ onFermer, onImporte, onOccupe }) {
                 <p className="text-xs text-gray-500">
                     Appliqué à tous les comptes créés. À communiquer aux membres ; ils pourront le changer.
                 </p>
-                <Champ id={idMdp} libelle="Mot de passe" erreur={touche ? erreursMdp.mdp : ""} aide={`${MDP_MIN} caractères au moins.`}>
+                <Champ id={idMdp} libelle="Mot de passe" erreur={touche ? erreursMdp.mdp : ""} aide="10 caractères au moins, avec une lettre et un chiffre, sans suite évidente ni mot comme msa ou jesus.">
                     <input
                         id={idMdp}
                         type="password"

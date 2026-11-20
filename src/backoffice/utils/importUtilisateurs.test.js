@@ -7,6 +7,7 @@ import {
     filtrerCellules,
     formulaireImportValide,
     motDePasseCommunFaible,
+    MESSAGE_MDP_FAIBLE,
     paysParDefaut,
 } from "./importUtilisateurs.js";
 
@@ -51,11 +52,15 @@ test("formulaireImportValide : tout est requis, mots de passe identiques", () =>
     assert.equal(formulaireImportValide({ ...ok, fichier: null }), false);
 });
 
-test("motDePasseCommunFaible : liste, caractère répété, suites numériques", () => {
-    for (const m of ["123123123", "Password", "msa12345", "aaaaaaaa", "987654321", "23456789"]) {
-        assert.equal(motDePasseCommunFaible(m), true, m);
-    }
-    for (const m of ["Commun-e2e-2026", "12345679", "abcdefgh1"]) assert.equal(motDePasseCommunFaible(m), false, m);
+test("motDePasseCommunFaible : longueur, lettre et chiffre, motifs, répétitions, suites", () => {
+    const faibles = [
+        "123123123", "Password", "msa12345", "aaaaaaaa", "987654321", "12341234", "11223344",
+        "azertyuiop", "qwertyuiop", "Msa@2026", "jesus123", "Password1", "Église#Vivante1",
+        "Motdepasse2026", "abcdefgh1", "Court1", "1234123412", "Ab1Ab1Ab1Ab1",
+    ];
+    for (const m of faibles) assert.equal(motDePasseCommunFaible(m), true, m);
+    for (const m of ["Commun-e2e-2026", "Tournesol7Lac", "ciel-Bleu-42x"]) assert.equal(motDePasseCommunFaible(m), false, m);
+    assert.match(MESSAGE_MDP_FAIBLE, /10 caractères/);
     const ok = { celluleId: 1, paysId: 2, motDePasse: "123123123", confirmation: "123123123", fichier: fichier("a.csv") };
     assert.equal(formulaireImportValide(ok), false);
 });

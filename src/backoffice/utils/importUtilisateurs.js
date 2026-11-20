@@ -40,6 +40,12 @@ export function erreurFichierUtilisateurs(fichier) {
 }
 
 // Mots de passe communs trop faciles à deviner (mêmes règles que le serveur).
+export const MDP_COMMUN_MIN = 10;
+export const MESSAGE_MDP_FAIBLE =
+    "Mot de passe trop faible : 10 caractères au moins, avec au moins une lettre et un chiffre, " +
+    "sans suite évidente (1234, azerty), sans bloc répété (12341234) " +
+    "ni mots comme msa, jesus, eglise, password ou motdepasse.";
+
 const MDP_FAIBLES = new Set([
     "123123123",
     "12345678",
@@ -54,21 +60,28 @@ const MDP_FAIBLES = new Set([
     "msa12345",
 ]);
 
-export const MESSAGE_MDP_FAIBLE = "Mot de passe trop faible : choisissez-en un plus difficile à deviner.";
+// Mots et suites de clavier refusés où qu'ils apparaissent (sans accents ni casse).
+const MOTIFS_FAIBLES = ["msa", "jesus", "eglise", "password", "motdepasse", "azerty", "qwerty", "qsdfgh", "azertyuiop", "qwertyuiop"];
+
+const estSuite = (c) => {
+    if (c.length < 3) return false;
+    const pas = c[1].charCodeAt(0) - c[0].charCodeAt(0);
+    return Math.abs(pas) === 1 && c.every((x, i) => i === 0 || x.charCodeAt(0) - c[i - 1].charCodeAt(0) === pas);
+};
 
 export function motDePasseCommunFaible(mdp) {
     const m = String(mdp ?? "")
         .trim()
         .toLowerCase();
+    if (Array.from(m).length < MDP_COMMUN_MIN) return true;
+    if (!/\p{L}/u.test(m) || !/\d/.test(m)) return true;
     if (MDP_FAIBLES.has(m)) return true;
+    const sansAccent = m.normalize("NFD").replace(/\p{M}/gu, "");
+    if (MOTIFS_FAIBLES.some((x) => sansAccent.includes(x))) return true;
+    // Bloc répété (12341234) ou doublons de suite (11223344).
+    if (/^(.+?)\1+$/su.test(m)) return true;
     const c = Array.from(m);
-    if (c.length > 0 && c.every((x) => x === c[0])) return true;
-    if (/^\d+$/.test(m) && c.length > 1) {
-        const d = c.map(Number);
-        const pas = d[1] - d[0];
-        return (pas === 1 || pas === -1) && d.every((x, i) => i === 0 || x - d[i - 1] === pas);
-    }
-    return false;
+    return estSuite(c.filter((x, i) => x !== c[i - 1]));
 }
 
 // Le bouton « Importer » n'est actif que si tout est renseigné.
