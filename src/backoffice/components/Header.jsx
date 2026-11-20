@@ -46,6 +46,7 @@ const navigation = [
             { name: "Plans", href: "/reading-plans" },
             { name: "Verset du jour", href: "/daily-verse" },
             { name: "Communication", href: "/communication" },
+            { name: "Sujets de prière", href: "/sujets-de-priere", adminOnly: true },
         ],
     },
     {
