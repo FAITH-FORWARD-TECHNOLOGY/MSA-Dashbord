@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useBlocker, useParams } from "react-router-dom";
 import { Loader2, Lock, Save } from "lucide-react";
 import BoutonRetour from "../components/BoutonRetour";
 import PermissionsGrille from "../components/roles/PermissionsGrille";
@@ -43,6 +43,21 @@ export default function RolePermissionsPage() {
     );
     const modifie = !memeSelection(selection, initiale);
     const verrouille = Boolean(role.data?.systeme);
+
+    // Modifications non enregistrées : confirmation avant de quitter la page, et avant de fermer l'onglet.
+    const aPerdre = modifie && !verrouille;
+    const blocage = useBlocker(aPerdre);
+    useEffect(() => {
+        if (blocage.state !== "blocked") return;
+        if (window.confirm("Des modifications ne sont pas enregistrées. Quitter la page et les perdre ?")) blocage.proceed();
+        else blocage.reset();
+    }, [blocage]);
+    useEffect(() => {
+        if (!aPerdre) return undefined;
+        const avantFermeture = (e) => e.preventDefault();
+        window.addEventListener("beforeunload", avantFermeture);
+        return () => window.removeEventListener("beforeunload", avantFermeture);
+    }, [aPerdre]);
 
     const enregistrer = async () => {
         setErreur("");

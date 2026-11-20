@@ -51,10 +51,7 @@ export function creerAcces(session) {
         if (nouveau) return codes.has(code);
         return !estReserveAdmin(code);
     };
-    // Portée d'une permission de l'app (TOUTES, SA_CELLULE ou null).
-    const portee = (code) =>
-        nouveau ? (session.permissions.find((p) => p?.code === code)?.portee ?? null) : null;
-    return { nouveau, superAdmin, peut, portee };
+    return { nouveau, superAdmin, peut };
 }
 
 // Fiches (détail) : permission « détails » du module, en plus de la liste.

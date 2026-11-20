@@ -19,6 +19,14 @@ type Cellule = {
     updatedAt: string;
 };
 
+// Attribution de rôle affichée dans la liste des comptes (serveur à rôles).
+type RoleUtilisateur = {
+    id: number;
+    nom: string;
+    type: string;
+    celluleId?: number | null;
+};
+
 type User = {
     id: number;
     nom: string;
@@ -31,5 +39,6 @@ type User = {
     createdAt: string;
     updatedAt: string;
     pays: Pays;
+    roles?: RoleUtilisateur[];
 };
-export type { User, Pays, Cellule };
+export type { User, Pays, Cellule, RoleUtilisateur };

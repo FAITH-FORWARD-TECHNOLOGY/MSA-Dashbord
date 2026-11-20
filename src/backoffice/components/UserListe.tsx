@@ -348,10 +348,10 @@ const UserList: React.FC<UserListProps> = ({
                                                             {user.nom}{" "}
                                                             {user.prenom}
                                                         </p>
-{nouveau ? (
+                                                        {nouveau ? (
                                                             <span className="flex flex-wrap items-center gap-1">
                                                                 <span className="sr-only">Rôles : </span>
-                                                                {((user as any).roles ?? []).map((r: any) => (
+                                                                {(user.roles ?? []).map((r) => (
                                                                     <span
                                                                         key={`${r.id}-${r.celluleId ?? ""}`}
                                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -365,7 +365,7 @@ const UserList: React.FC<UserListProps> = ({
                                                                 ))}
                                                             </span>
                                                         ) : (
-                                                                                                                    <span
+                                                            <span
                                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                                 user.role ===
                                                                 "ADMIN"
