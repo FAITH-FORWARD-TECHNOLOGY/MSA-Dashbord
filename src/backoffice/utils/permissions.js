@@ -52,7 +52,9 @@ export function creerAcces(session) {
         if (nouveau) return codes.has(code);
         return !estReserveAdmin(code);
     };
-    return { nouveau, superAdmin, peut };
+    // Fonction nouvelle : permission sur un serveur à rôles, ADMIN seul en repli (ancien serveur).
+    const peutNouveau = (code) => (nouveau ? peut(code) : superAdmin);
+    return { nouveau, superAdmin, peut, peutNouveau };
 }
 
 // Fiches (détail) : permission « détails » du module, en plus de la liste.

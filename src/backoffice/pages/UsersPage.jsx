@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import UserList from "../components/UserListe";
 import UserFormModal from "../components/UserFormModal";
+import ImportUtilisateursModal from "../components/ImportUtilisateursModal";
 import { useUsers } from "../hooks/useUsers";
 import { useSearchParams } from "react-router-dom";
 import { usePermissions } from "../hooks/usePermissions";
@@ -10,12 +11,13 @@ import { libelleFiltreQuartier, parametresUtilisateurs } from "../utils/referent
 
 const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
-    const { peut, nouveau, superAdmin } = usePermissions();
+    const { peut, peutNouveau, nouveau, superAdmin } = usePermissions();
     // Filtre « Rôle » (super admin, serveur à rôles) ; ?roleId= vient de la liste des rôles.
     const [params, setParams] = useSearchParams();
     const roleId = params.get("roleId") ?? "";
     const filtreRoleActif = nouveau && superAdmin;
     const roles = useListeRoles(undefined, filtreRoleActif);
+    const [importOuvert, setImportOuvert] = useState(false);
     // Filtre « Quartier » (admin) : quartier choisi, SANS_QUARTIER ou null.
     const [filtreQuartier, setFiltreQuartier] = useState(null);
     const {
@@ -37,14 +39,25 @@ const UsersPage = () => {
                 Gestion des utilisateurs
             </h2>
 
-            {peut("bo.utilisateurs.creer") && (
-                <button
-                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                    onClick={() => setShowModal(true)}
-                >
-                    Créer un utilisateur
-                </button>
-            )}
+            <div className="mb-4 flex flex-wrap gap-2">
+                {peut("bo.utilisateurs.creer") && (
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                        onClick={() => setShowModal(true)}
+                    >
+                        Créer un utilisateur
+                    </button>
+                )}
+                {peutNouveau("bo.utilisateurs.creer") && (
+                    <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        onClick={() => setImportOuvert(true)}
+                    >
+                        Importer (CSV)
+                    </button>
+                )}
+            </div>
 
             {filtreRoleActif && (
                 <div className="mb-4 sm:max-w-md">
@@ -105,6 +118,11 @@ const UsersPage = () => {
                     onView={(id) => console.log("Voir user", id)}
                 />
             )}
+            <ImportUtilisateursModal
+                ouvert={importOuvert}
+                onFermer={() => setImportOuvert(false)}
+                onImporte={() => refetch()}
+            />
             {showModal && (
                 <UserFormModal
                     onClose={() => setShowModal(false)}
