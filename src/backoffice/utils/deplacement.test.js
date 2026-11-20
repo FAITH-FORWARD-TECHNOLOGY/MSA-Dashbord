@@ -6,6 +6,7 @@ import {
     basculerTout,
     cellulesCibles,
     corpsDeplacement,
+    peutDeplacer,
     libelleRecap,
     libelleResultat,
     purgerSelection,
@@ -76,4 +77,12 @@ test("cellules cibles : actives, hors courante, recherche, tri", () => {
     ];
     assert.deepEqual(cellulesCibles(toutes, "1", "").map((c) => c.id), [2, 4]);
     assert.deepEqual(cellulesCibles(toutes, 4, "ALPH").map((c) => c.id), [2]);
+});
+
+test("peutDeplacer : admin seulement", () => {
+    assert.equal(peutDeplacer({ role: "ADMIN" }), true);
+    assert.equal(peutDeplacer({ role: "USER" }), false);
+    assert.equal(peutDeplacer({ role: "LEADER" }), false);
+    assert.equal(peutDeplacer(null), false);
+    assert.equal(peutDeplacer(undefined), false);
 });

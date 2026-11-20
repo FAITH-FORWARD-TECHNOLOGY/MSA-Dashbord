@@ -8,7 +8,12 @@ import { cellulesCibles, corpsDeplacement, libelleRecap } from "../utils/deplace
 
 // Confirmation du déplacement : choix de la cellule cible, récapitulatif, envoi ; Échap et clic extérieur ferment.
 
-export default function DeplacerMembresModal({ ouvert, celluleId, celluleNom, nombre, ids, tous, onFermer, onTermine }) {
+// Montée seulement une fois ouverte : pas d'appel GET /cellules/all avant.
+export default function DeplacerMembresModal(props) {
+    return props.ouvert ? <FenetreDeplacement {...props} /> : null;
+}
+
+function FenetreDeplacement({ ouvert, celluleId, celluleNom, nombre, ids, tous, onFermer, onTermine }) {
     const { cellules, loading, error, refetch } = useCellules();
     const { deplacer, enCours, erreur, effacerErreur } = useDeplacerMembres();
     const [recherche, setRecherche] = useState("");

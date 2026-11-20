@@ -1,5 +1,8 @@
 // Logique pure du déplacement de membres entre cellules (CEL-4).
 
+// Seul l'admin voit les outils de déplacement.
+export const peutDeplacer = (user) => user?.role === "ADMIN";
+
 // Le responsable reste sur place : il n'est pas sélectionnable.
 export const estResponsable = (user, leaderId) => leaderId != null && user.id === leaderId;
 

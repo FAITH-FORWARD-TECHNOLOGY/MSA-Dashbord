@@ -9,12 +9,20 @@ export function useDeplacerMembres() {
     const deplacer = async (celluleId, corps) => {
         setEnCours(true);
         setErreur('');
+        let response;
         try {
-            const response = await fetch(`${API_BASE_URL}/cellules/${celluleId}/membres/deplacer`, {
+            response = await fetch(`${API_BASE_URL}/cellules/${celluleId}/membres/deplacer`, {
                 method: 'POST',
                 headers: { accept: '*/*', 'Content-Type': 'application/json' },
                 body: JSON.stringify(corps),
             });
+        } catch {
+            const message = 'Impossible de joindre le serveur. Vérifiez votre connexion.';
+            setErreur(message);
+            setEnCours(false);
+            throw new Error(message);
+        }
+        try {
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
                 const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
